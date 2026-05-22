@@ -1,0 +1,114 @@
+# Labor Tracker
+
+A lightweight desktop app for tracking billable hours by client. Built with Tauri v2, React, and SQLite — data stays local on your machine.
+
+![Stack](https://img.shields.io/badge/Tauri-v2-blue) ![Stack](https://img.shields.io/badge/React-18-61DAFB) ![Stack](https://img.shields.io/badge/SQLite-local-green)
+
+## Features
+
+- Clock in / clock out with a live running timer
+- Per-client session tracking with color coding
+- Notes on each session
+- Stats for today, this week, this month, and all time
+- Window title updates with elapsed time while clocked in
+- Session history with delete
+
+## Prerequisites
+
+### 1. Node.js
+Download and install from [nodejs.org](https://nodejs.org) (v18 or later).
+
+### 2. Rust
+Install from [rustup.rs](https://rustup.rs):
+```
+curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
+```
+On Windows, run the installer from the site. After installing, restart your terminal.
+
+### 3. Tauri system dependencies
+
+**Windows**
+- [Microsoft C++ Build Tools](https://visualstudio.microsoft.com/visual-cpp-build-tools/) — install the **"Desktop development with C++"** workload
+- WebView2 — already included on Windows 10 (1803+) and Windows 11
+
+**macOS**
+```
+xcode-select --install
+```
+
+**Linux (Debian/Ubuntu)**
+```
+sudo apt update
+sudo apt install libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf
+```
+
+## Getting Started
+
+```bash
+# 1. Clone the repo
+git clone https://github.com/lancePetrisko/personal-labor-tracker.git
+cd personal-labor-tracker
+
+# 2. Install JS dependencies
+npm install
+
+# 3. Run in development mode
+npm run tauri dev
+```
+
+The first run takes 3–5 minutes while Cargo compiles Tauri and its dependencies. Subsequent runs are fast.
+
+## Building a release binary
+
+```bash
+npm run tauri build
+```
+
+The installer/executable will be output to `src-tauri/target/release/bundle/`.
+
+## Where data is stored
+
+The SQLite database (`labor.db`) is stored in the OS app data directory:
+
+| OS | Path |
+|----|------|
+| Windows | `C:\Users\<you>\AppData\Roaming\com.labortracker.app\labor.db` |
+| macOS | `~/Library/Application Support/com.labortracker.app/labor.db` |
+| Linux | `~/.local/share/com.labortracker.app/labor.db` |
+
+You can open this file with any SQLite viewer (e.g. [DB Browser for SQLite](https://sqlitebrowser.org/)) to inspect or back up your data.
+
+## Project structure
+
+```
+personal-labor-tracker/
+├── src/                        # React frontend
+│   ├── App.tsx                 # Root component, state, DB calls
+│   ├── components/
+│   │   ├── ClockPanel.tsx      # Clock in/out button + live timer
+│   │   ├── LiveTimer.tsx       # Ticking HH:MM:SS display
+│   │   ├── SessionHistory.tsx  # History table
+│   │   ├── StatsBar.tsx        # Today/week/month/all-time totals
+│   │   └── AddClientModal.tsx  # Add client dialog
+│   └── lib/
+│       ├── db.ts               # All SQLite operations
+│       ├── types.ts            # TypeScript interfaces
+│       └── utils.ts            # Date/duration formatting helpers
+├── src-tauri/                  # Rust / Tauri backend
+│   ├── src/
+│   │   ├── main.rs
+│   │   └── lib.rs              # Tauri builder with SQL plugin
+│   ├── capabilities/
+│   │   └── default.json        # SQL permissions
+│   └── tauri.conf.json         # App config (window size, identifier)
+├── index.html
+├── vite.config.ts
+└── tailwind.config.js
+```
+
+## Roadmap
+
+- [ ] GitHub integration — attach commits/PRs to sessions via GitHub API
+- [ ] CSV export for invoicing
+- [ ] Earnings view (hourly rate × hours per client)
+- [ ] Edit session notes after the fact
