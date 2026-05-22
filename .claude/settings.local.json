@@ -1,0 +1,11 @@
+{
+  "enabledPlugins": {
+    "claude-mem@thedotmack": true
+  },
+  "permissions": {
+    "allow": [
+      "Bash(rustc --version)",
+      "Bash(cargo --version)"
+    ]
+  }
+}

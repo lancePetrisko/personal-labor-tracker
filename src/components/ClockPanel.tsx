@@ -1,0 +1,111 @@
+import { useState } from "react";
+import type { Client, ActiveSession } from "../lib/types";
+import LiveTimer from "./LiveTimer";
+
+interface Props {
+  clients: Client[];
+  activeSession: ActiveSession | null;
+  onClockIn: (clientId: number | null, notes: string) => Promise<void>;
+  onClockOut: (notes: string) => Promise<void>;
+}
+
+export default function ClockPanel({ clients, activeSession, onClockIn, onClockOut }: Props) {
+  const [selectedClientId, setSelectedClientId] = useState<number | null>(null);
+  const [notes, setNotes] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  const isActive = !!activeSession;
+
+  async function handleToggle() {
+    setLoading(true);
+    try {
+      if (isActive) {
+        await onClockOut(notes);
+        setNotes("");
+      } else {
+        await onClockIn(selectedClientId, notes);
+      }
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  const activeClient = clients.find((c) => c.id === (activeSession?.client_id ?? selectedClientId));
+
+  return (
+    <div className="flex flex-col items-center gap-6">
+      {/* Status dot + label */}
+      <div className="flex items-center gap-2">
+        <span
+          className={`w-2.5 h-2.5 rounded-full ${isActive ? "bg-active dot-blink" : "bg-[#333]"}`}
+        />
+        <span className={`text-xs font-medium tracking-widest uppercase ${isActive ? "text-active" : "text-muted"}`}>
+          {isActive ? "Clocked In" : "Not Tracking"}
+        </span>
+      </div>
+
+      {/* Timer or idle display */}
+      <div className="flex flex-col items-center gap-1 min-h-[72px] justify-center">
+        {isActive ? (
+          <LiveTimer startedAt={activeSession.started_at} />
+        ) : (
+          <span className="font-mono text-5xl font-medium tracking-widest text-[#2a2a2a] tabular-nums">
+            00:00:00
+          </span>
+        )}
+        {activeClient && (
+          <span className="text-xs mt-1" style={{ color: activeClient.color }}>
+            {activeClient.name}
+          </span>
+        )}
+      </div>
+
+      {/* Clock in/out button */}
+      <button
+        onClick={handleToggle}
+        disabled={loading}
+        className={`
+          w-36 h-36 rounded-full font-semibold text-sm tracking-widest uppercase
+          transition-all duration-300 border-2 disabled:opacity-50
+          ${isActive
+            ? "bg-active/10 border-active text-active clock-active hover:bg-active/20"
+            : "bg-accent/10 border-accent text-accent hover:bg-accent/20"
+          }
+        `}
+      >
+        {loading ? "..." : isActive ? "Clock\nOut" : "Clock\nIn"}
+      </button>
+
+      {/* Client selector — only when not clocked in */}
+      {!isActive && (
+        <div className="w-full max-w-xs flex flex-col gap-2">
+          <label className="text-xs text-muted uppercase tracking-wider">Client</label>
+          <select
+            value={selectedClientId ?? ""}
+            onChange={(e) => setSelectedClientId(e.target.value ? Number(e.target.value) : null)}
+            className="bg-surface-2 border border-border rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-accent"
+          >
+            <option value="">No client</option>
+            {clients.map((c) => (
+              <option key={c.id} value={c.id}>
+                {c.name}
+              </option>
+            ))}
+          </select>
+        </div>
+      )}
+
+      {/* Notes */}
+      <div className="w-full max-w-xs flex flex-col gap-2">
+        <label className="text-xs text-muted uppercase tracking-wider">Notes</label>
+        <input
+          type="text"
+          value={notes}
+          onChange={(e) => setNotes(e.target.value)}
+          placeholder={isActive ? "What are you working on?" : "Session notes..."}
+          className="bg-surface-2 border border-border rounded-lg px-3 py-2 text-sm text-white placeholder:text-[#444] focus:outline-none focus:border-accent"
+        />
+      </div>
+    </div>
+  );
+}
