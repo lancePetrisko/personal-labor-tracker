@@ -64,7 +64,16 @@ The first run takes 3–5 minutes while Cargo compiles Tauri and its dependencie
 npm run tauri build
 ```
 
-The installer/executable will be output to `src-tauri/target/release/bundle/`.
+This compiles the frontend, builds the Rust backend in release mode, and bundles everything into installers. The first build takes ~5 minutes; subsequent builds are much faster.
+
+Output files in `src-tauri/target/release/bundle/`:
+
+| File | Description |
+|------|-------------|
+| `nsis/Labor Tracker_<version>_x64-setup.exe` | Standard Windows installer (recommended for personal use) |
+| `msi/Labor Tracker_<version>_x64_en-US.msi` | MSI package for enterprise/Group Policy deployment |
+
+Run the `.exe` to install the app like any other Windows program.
 
 ## Where data is stored
 
