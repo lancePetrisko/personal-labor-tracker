@@ -12,6 +12,7 @@ import {
   clockIn,
   clockOut,
   deleteSession,
+  updateSessionNotes,
 } from "./lib/db";
 import { formatDurationShort, secondsSince } from "./lib/utils";
 import ClockPanel from "./components/ClockPanel";
@@ -100,6 +101,11 @@ export default function App() {
     await deleteSession(id);
     const updated = await loadSessions();
     setSessions(updated);
+  }
+
+  async function handleUpdateSessionNotes(id: number, notes: string) {
+    await updateSessionNotes(id, notes);
+    setSessions((prev) => prev.map((s) => s.id === id ? { ...s, notes: notes || null } : s));
   }
 
   if (loading) {
@@ -214,7 +220,7 @@ export default function App() {
             </div>
           </div>
           <div className="bg-surface border border-border rounded-xl overflow-hidden">
-            <SessionHistory sessions={sessions} onDelete={handleDeleteSession} />
+            <SessionHistory sessions={sessions} onDelete={handleDeleteSession} onUpdateNotes={handleUpdateSessionNotes} />
           </div>
         </div>
       </main>

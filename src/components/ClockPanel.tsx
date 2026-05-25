@@ -55,9 +55,16 @@ export default function ClockPanel({ clients, activeSession, selectedClientId, o
           </span>
         )}
         {activeClient && (
-          <span className="text-xs mt-1" style={{ color: activeClient.color }}>
-            {activeClient.name}
-          </span>
+          <div className="flex flex-col items-center gap-0.5 mt-1">
+            <span className="text-xs" style={{ color: activeClient.color }}>
+              {activeClient.name}
+            </span>
+            {activeClient.hourly_rate != null && (
+              <span className="text-xs text-muted font-mono">
+                ${activeClient.hourly_rate.toFixed(2)}/hr
+              </span>
+            )}
+          </div>
         )}
       </div>
 

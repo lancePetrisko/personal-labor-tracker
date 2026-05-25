@@ -1,15 +1,35 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import type { Session } from "../lib/types";
 import { formatDate, formatTime, formatDurationShort } from "../lib/utils";
 
 interface Props {
   sessions: Session[];
   onDelete: (id: number) => Promise<void>;
+  onUpdateNotes: (id: number, notes: string) => Promise<void>;
 }
 
-export default function SessionHistory({ sessions, onDelete }: Props) {
+export default function SessionHistory({ sessions, onDelete, onUpdateNotes }: Props) {
   const [menuOpen, setMenuOpen] = useState<number | null>(null);
   const [deleting, setDeleting] = useState<number | null>(null);
+  const [editingNotes, setEditingNotes] = useState<number | null>(null);
+  const [draftNotes, setDraftNotes] = useState("");
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  function startEditingNotes(session: Session) {
+    setEditingNotes(session.id);
+    setDraftNotes(session.notes ?? "");
+    setTimeout(() => inputRef.current?.focus(), 0);
+  }
+
+  async function commitNotes(id: number) {
+    await onUpdateNotes(id, draftNotes);
+    setEditingNotes(null);
+  }
+
+  function handleNotesKeyDown(e: React.KeyboardEvent, id: number) {
+    if (e.key === "Enter") commitNotes(id);
+    if (e.key === "Escape") setEditingNotes(null);
+  }
 
   async function handleDelete(id: number) {
     setDeleting(id);
@@ -80,9 +100,24 @@ export default function SessionHistory({ sessions, onDelete }: Props) {
             </div>
 
             {/* Notes */}
-            <span className="text-sm text-muted truncate">
-              {session.notes ?? "—"}
-            </span>
+            {editingNotes === session.id ? (
+              <input
+                ref={inputRef}
+                value={draftNotes}
+                onChange={(e) => setDraftNotes(e.target.value)}
+                onBlur={() => commitNotes(session.id)}
+                onKeyDown={(e) => handleNotesKeyDown(e, session.id)}
+                className="w-full bg-surface-2 border border-accent rounded px-2 py-0.5 text-sm text-white focus:outline-none"
+              />
+            ) : (
+              <button
+                onClick={() => startEditingNotes(session)}
+                className="text-left text-sm text-muted truncate w-full hover:text-white transition-colors group"
+                title="Click to edit notes"
+              >
+                {session.notes ?? <span className="text-[#333] group-hover:text-[#555]">Add notes...</span>}
+              </button>
+            )}
 
             {/* Menu */}
             <div className="relative">
