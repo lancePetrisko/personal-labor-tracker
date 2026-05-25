@@ -5,12 +5,13 @@ import LiveTimer from "./LiveTimer";
 interface Props {
   clients: Client[];
   activeSession: ActiveSession | null;
+  selectedClientId: number | null;
+  onSelectClient: (id: number | null) => void;
   onClockIn: (clientId: number | null, notes: string) => Promise<void>;
   onClockOut: (notes: string) => Promise<void>;
 }
 
-export default function ClockPanel({ clients, activeSession, onClockIn, onClockOut }: Props) {
-  const [selectedClientId, setSelectedClientId] = useState<number | null>(null);
+export default function ClockPanel({ clients, activeSession, selectedClientId, onSelectClient, onClockIn, onClockOut }: Props) {
   const [notes, setNotes] = useState("");
   const [loading, setLoading] = useState(false);
 
@@ -82,7 +83,7 @@ export default function ClockPanel({ clients, activeSession, onClockIn, onClockO
           <label className="text-xs text-muted uppercase tracking-wider">Client</label>
           <select
             value={selectedClientId ?? ""}
-            onChange={(e) => setSelectedClientId(e.target.value ? Number(e.target.value) : null)}
+            onChange={(e) => onSelectClient(e.target.value ? Number(e.target.value) : null)}
             className="bg-surface-2 border border-border rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-accent"
           >
             <option value="">No client</option>

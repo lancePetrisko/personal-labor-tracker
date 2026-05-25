@@ -1,11 +1,14 @@
 import { useEffect, useState, useCallback } from "react";
 import { getCurrentWindow } from "@tauri-apps/api/window";
+import { invoke } from "@tauri-apps/api/core";
 import type { Client, Session, ActiveSession } from "./lib/types";
 import {
   loadClients,
   loadSessions,
   getActiveSession,
   addClient,
+  updateClient,
+  deleteClient,
   clockIn,
   clockOut,
   deleteSession,
@@ -15,6 +18,7 @@ import ClockPanel from "./components/ClockPanel";
 import StatsBar from "./components/StatsBar";
 import SessionHistory from "./components/SessionHistory";
 import AddClientModal from "./components/AddClientModal";
+import EditClientModal from "./components/EditClientModal";
 
 export default function App() {
   const [clients, setClients] = useState<Client[]>([]);
@@ -22,6 +26,8 @@ export default function App() {
   const [activeSession, setActiveSession] = useState<ActiveSession | null>(null);
   const [activeDelta, setActiveDelta] = useState(0);
   const [showAddClient, setShowAddClient] = useState(false);
+  const [editingClient, setEditingClient] = useState<Client | null>(null);
+  const [selectedClientId, setSelectedClientId] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -66,12 +72,26 @@ export default function App() {
     await clockOut(activeSession.id, notes);
     setActiveSession(null);
     setActiveDelta(0);
+    setSelectedClientId(null);
     await getCurrentWindow().setTitle("Labor Tracker").catch(() => {});
     await refresh();
   }
 
   async function handleAddClient(name: string, rate: number | null, color: string) {
     await addClient(name, rate, color);
+    const updated = await loadClients();
+    setClients(updated);
+  }
+
+  async function handleUpdateClient(id: number, name: string, rate: number | null, color: string) {
+    await updateClient(id, name, rate, color);
+    const updated = await loadClients();
+    setClients(updated);
+  }
+
+  async function handleDeleteClient(id: number) {
+    await deleteClient(id);
+    if (selectedClientId === id) setSelectedClientId(null);
     const updated = await loadClients();
     setClients(updated);
   }
@@ -110,20 +130,35 @@ export default function App() {
         <div className="flex items-center gap-2">
           {clients.length > 0 && (
             <div className="flex items-center gap-1.5">
-              {clients.slice(0, 5).map((c) => (
-                <span
-                  key={c.id}
-                  title={c.name}
-                  className="text-xs px-2 py-0.5 rounded-full font-medium"
-                  style={{
-                    background: `${c.color}22`,
-                    color: c.color,
-                    border: `1px solid ${c.color}44`,
-                  }}
-                >
-                  {c.name}
-                </span>
-              ))}
+              {clients.slice(0, 5).map((c) => {
+                const isSelected = selectedClientId === c.id && !activeSession;
+                return (
+                  <div key={c.id} className="group relative">
+                    <button
+                      title={isSelected ? `${c.name} selected` : `Select ${c.name}`}
+                      onClick={() => !activeSession && setSelectedClientId(isSelected ? null : c.id)}
+                      disabled={!!activeSession}
+                      className="text-xs px-2 py-0.5 rounded-full font-medium transition-all"
+                      style={{
+                        background: isSelected ? `${c.color}44` : `${c.color}22`,
+                        color: c.color,
+                        border: `1px solid ${isSelected ? c.color : `${c.color}44`}`,
+                        cursor: activeSession ? "default" : "pointer",
+                        boxShadow: isSelected ? `0 0 0 1px ${c.color}66` : "none",
+                      }}
+                    >
+                      {c.name}
+                    </button>
+                    <button
+                      onClick={(e) => { e.stopPropagation(); setEditingClient(c); }}
+                      title={`Edit ${c.name}`}
+                      className="absolute -top-1.5 -right-1.5 w-4 h-4 rounded-full bg-[#1a1a1a] border border-border text-[9px] text-muted opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity hover:text-white hover:border-[#444]"
+                    >
+                      ✎
+                    </button>
+                  </div>
+                );
+              })}
             </div>
           )}
           <button
@@ -142,6 +177,8 @@ export default function App() {
           <ClockPanel
             clients={clients}
             activeSession={activeSession}
+            selectedClientId={selectedClientId}
+            onSelectClient={setSelectedClientId}
             onClockIn={handleClockIn}
             onClockOut={handleClockOut}
           />
@@ -149,7 +186,12 @@ export default function App() {
 
         {/* Stats */}
         <div className="px-6 py-5 border-b border-border">
-          <StatsBar sessions={sessions} activeDelta={activeDelta} />
+          <StatsBar
+            sessions={sessions}
+            clients={clients}
+            activeDelta={activeDelta}
+            activeClientId={activeSession?.client_id}
+          />
         </div>
 
         {/* Session history */}
@@ -158,9 +200,18 @@ export default function App() {
             <span className="text-xs text-muted uppercase tracking-wider font-medium">
               Session History
             </span>
-            <span className="text-xs text-muted">
-              {sessions.length} {sessions.length === 1 ? "session" : "sessions"}
-            </span>
+            <div className="flex items-center gap-3">
+              <button
+                onClick={() => invoke("show_in_explorer").catch(() => {})}
+                title="Open the folder containing labor.db so you can copy it to another device"
+                className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg border border-border text-xs text-muted hover:text-white hover:border-[#444] transition-colors"
+              >
+                <span className="text-sm leading-none">&#128193;</span> Find in File Explorer
+              </button>
+              <span className="text-xs text-muted">
+                {sessions.length} {sessions.length === 1 ? "session" : "sessions"}
+              </span>
+            </div>
           </div>
           <div className="bg-surface border border-border rounded-xl overflow-hidden">
             <SessionHistory sessions={sessions} onDelete={handleDeleteSession} />
@@ -172,6 +223,15 @@ export default function App() {
         <AddClientModal
           onAdd={handleAddClient}
           onClose={() => setShowAddClient(false)}
+        />
+      )}
+
+      {editingClient && (
+        <EditClientModal
+          client={editingClient}
+          onSave={handleUpdateClient}
+          onDelete={handleDeleteClient}
+          onClose={() => setEditingClient(null)}
         />
       )}
     </div>

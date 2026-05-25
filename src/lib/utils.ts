@@ -57,6 +57,23 @@ export function sessionsThisMonth(sessions: { started_at: string; duration_secon
   return totalSeconds(sessions.filter((s) => new Date(s.started_at) >= start));
 }
 
+export function formatCurrency(amount: number): string {
+  return "$" + amount.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
+export function earningsInWindow(
+  sessions: { client_id: number | null; duration_seconds: number | null; started_at: string }[],
+  clients: { id: number; hourly_rate: number | null }[],
+  since: Date | null
+): number {
+  const rateMap = new Map(clients.map((c) => [c.id, c.hourly_rate ?? 0]));
+  const filtered = since ? sessions.filter((s) => new Date(s.started_at) >= since) : sessions;
+  return filtered.reduce((sum, s) => {
+    const rate = s.client_id != null ? (rateMap.get(s.client_id) ?? 0) : 0;
+    return sum + ((s.duration_seconds ?? 0) / 3600) * rate;
+  }, 0);
+}
+
 export const CLIENT_COLORS = [
   "#6366f1",
   "#ec4899",

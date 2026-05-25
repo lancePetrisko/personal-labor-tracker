@@ -1,0 +1,1 @@
+make it so when u click on a clients name up top it changes to that client

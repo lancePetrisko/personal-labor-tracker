@@ -45,6 +45,14 @@ export async function addClient(name: string, hourly_rate: number | null, color:
   );
 }
 
+export async function updateClient(id: number, name: string, hourly_rate: number | null, color: string): Promise<void> {
+  const db = await getDb();
+  await db.execute(
+    "UPDATE clients SET name = $1, hourly_rate = $2, color = $3 WHERE id = $4",
+    [name, hourly_rate, color, id]
+  );
+}
+
 export async function deleteClient(id: number): Promise<void> {
   const db = await getDb();
   await db.execute("DELETE FROM clients WHERE id = $1", [id]);
