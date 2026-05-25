@@ -16,27 +16,34 @@ A lightweight desktop app for tracking billable hours by client. Built with Taur
 ## Prerequisites
 
 ### 1. Node.js
+
 Download and install from [nodejs.org](https://nodejs.org) (v18 or later).
 
 ### 2. Rust
+
 Install from [rustup.rs](https://rustup.rs):
+
 ```
 curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
 ```
+
 On Windows, run the installer from the site. After installing, restart your terminal.
 
 ### 3. Tauri system dependencies
 
 **Windows**
+
 - [Microsoft C++ Build Tools](https://visualstudio.microsoft.com/visual-cpp-build-tools/) — install the **"Desktop development with C++"** workload
 - WebView2 — already included on Windows 10 (1803+) and Windows 11
 
 **macOS**
+
 ```
 xcode-select --install
 ```
 
 **Linux (Debian/Ubuntu)**
+
 ```
 sudo apt update
 sudo apt install libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf
@@ -68,10 +75,10 @@ This compiles the frontend, builds the Rust backend in release mode, and bundles
 
 Output files in `src-tauri/target/release/bundle/`:
 
-| File | Description |
-|------|-------------|
+| File                                         | Description                                               |
+| -------------------------------------------- | --------------------------------------------------------- |
 | `nsis/Labor Tracker_<version>_x64-setup.exe` | Standard Windows installer (recommended for personal use) |
-| `msi/Labor Tracker_<version>_x64_en-US.msi` | MSI package for enterprise/Group Policy deployment |
+| `msi/Labor Tracker_<version>_x64_en-US.msi`  | MSI package for enterprise/Group Policy deployment        |
 
 Run the `.exe` to install the app like any other Windows program.
 
@@ -79,11 +86,11 @@ Run the `.exe` to install the app like any other Windows program.
 
 The SQLite database (`labor.db`) is stored in the OS app data directory:
 
-| OS | Path |
-|----|------|
+| OS      | Path                                                           |
+| ------- | -------------------------------------------------------------- |
 | Windows | `C:\Users\<you>\AppData\Roaming\com.labortracker.app\labor.db` |
-| macOS | `~/Library/Application Support/com.labortracker.app/labor.db` |
-| Linux | `~/.local/share/com.labortracker.app/labor.db` |
+| macOS   | `~/Library/Application Support/com.labortracker.app/labor.db`  |
+| Linux   | `~/.local/share/com.labortracker.app/labor.db`                 |
 
 You can open this file with any SQLite viewer (e.g. [DB Browser for SQLite](https://sqlitebrowser.org/)) to inspect or back up your data.
 
@@ -121,3 +128,4 @@ personal-labor-tracker/
 - [ ] CSV export for invoicing
 - [ ] Earnings view (hourly rate × hours per client)
 - [ ] Edit session notes after the fact
+- [ ] Feature for editing how long you worked in case the client crashes
