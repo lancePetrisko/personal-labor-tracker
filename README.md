@@ -73,7 +73,9 @@ npm run tauri build
 
 This compiles the frontend, builds the Rust backend in release mode, and bundles everything into installers. The first build takes ~5 minutes; subsequent builds are much faster.
 
-Output files in `src-tauri/target/release/bundle/`:
+Output files land in `src-tauri/target/release/bundle/`. Which ones you get depends on the OS you build from — you cannot cross-compile a Windows installer from macOS or vice versa.
+
+**Windows**
 
 | File                                         | Description                                               |
 | -------------------------------------------- | --------------------------------------------------------- |
@@ -81,6 +83,37 @@ Output files in `src-tauri/target/release/bundle/`:
 | `msi/Labor Tracker_<version>_x64_en-US.msi`  | MSI package for enterprise/Group Policy deployment        |
 
 Run the `.exe` to install the app like any other Windows program.
+
+**macOS**
+
+| File                                              | Description                            |
+| ------------------------------------------------- | -------------------------------------- |
+| `macos/Labor Tracker.app`                         | The app bundle — drag to `/Applications` |
+| `dmg/Labor Tracker_<version>_aarch64.dmg`         | Disk image for handing to someone else |
+
+Builds target Apple Silicon (`aarch64-apple-darwin`) by default — that is your machine's native
+architecture. For an Intel or universal build, pass a target explicitly:
+
+```bash
+npm run tauri build -- --target universal-apple-darwin   # requires: rustup target add x86_64-apple-darwin
+```
+
+### Unsigned builds on macOS
+
+These builds are **not code-signed or notarized** (that needs a paid Apple Developer account). The app
+you build yourself runs fine locally, but a `.dmg` copied to another Mac will be quarantined by
+Gatekeeper — "Apple could not verify..." On that Mac, either right-click the app and choose **Open**
+once, or strip the quarantine flag:
+
+```bash
+xattr -dr com.apple.quarantine "/Applications/Labor Tracker.app"
+```
+
+### Automated releases
+
+Pushing a `v*` tag (e.g. `git tag v0.1.0 && git push origin v0.1.0`) triggers
+`.github/workflows/release.yml`, which builds on both `macos-latest` and `windows-latest` and attaches
+the installers to a **draft** GitHub Release. The same Gatekeeper caveat applies to the CI `.dmg`.
 
 ## Where data is stored
 

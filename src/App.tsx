@@ -212,7 +212,7 @@ export default function App() {
                 title="Open the folder containing labor.db so you can copy it to another device"
                 className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg border border-border text-xs text-muted hover:text-white hover:border-[#444] transition-colors"
               >
-                <span className="text-sm leading-none">&#128193;</span> Find in File Explorer
+                <span className="text-sm leading-none">&#128193;</span> Show Data Folder
               </button>
               <span className="text-xs text-muted">
                 {sessions.length} {sessions.length === 1 ? "session" : "sessions"}
