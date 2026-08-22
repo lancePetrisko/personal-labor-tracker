@@ -147,6 +147,25 @@ export async function deleteSession(id: number): Promise<void> {
   await db.execute("DELETE FROM sessions WHERE id = $1", [id]);
 }
 
+/** Total finished sessions — `loadSessions()` is capped at 100, so counts come from here. */
+export async function countSessions(): Promise<number> {
+  const db = await getDb();
+  const rows = await db.select<{ n: number }[]>(
+    "SELECT COUNT(*) as n FROM sessions WHERE ended_at IS NOT NULL"
+  );
+  return rows[0]?.n ?? 0;
+}
+
+/**
+ * Wipes every finished session. A session that is still running (ended_at IS NULL)
+ * is left alone so an in-progress clock-in survives. Returns rows removed.
+ */
+export async function deleteAllSessions(): Promise<number> {
+  const db = await getDb();
+  const result = await db.execute("DELETE FROM sessions WHERE ended_at IS NOT NULL");
+  return result.rowsAffected ?? 0;
+}
+
 export async function updateSessionNotes(id: number, notes: string): Promise<void> {
   const db = await getDb();
   await db.execute("UPDATE sessions SET notes = $1 WHERE id = $2", [notes || null, id]);

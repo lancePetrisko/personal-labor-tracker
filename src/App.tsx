@@ -17,6 +17,8 @@ import {
   loadSettings,
   saveSetting,
   loadSessionsSince,
+  deleteAllSessions,
+  countSessions,
 } from "./lib/db";
 import { formatDurationShort, secondsSince } from "./lib/utils";
 import ClockPanel from "./components/ClockPanel";
@@ -45,18 +47,21 @@ export default function App() {
   const [view, setView] = useState<"tracker" | "dashboard" | "settings">("tracker");
   const [dashboardSessions, setDashboardSessions] = useState<Session[]>([]);
   const [dashboardLoading, setDashboardLoading] = useState(false);
+  const [sessionTotal, setSessionTotal] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   const refresh = useCallback(async () => {
-    const [c, s, a, cfg] = await Promise.all([
+    const [c, s, a, cfg, n] = await Promise.all([
       loadClients(),
       loadSessions(),
       getActiveSession(),
       loadSettings(),
+      countSessions(),
     ]);
     setClients(c);
     setSessions(s);
+    setSessionTotal(n);
     setActiveSession(a);
     setSettings(parseSettings(cfg));
     if (a) setActiveDelta(secondsSince(a.started_at));
@@ -143,8 +148,9 @@ export default function App() {
 
   async function handleDeleteSession(id: number) {
     await deleteSession(id);
-    const updated = await loadSessions();
+    const [updated, n] = await Promise.all([loadSessions(), countSessions()]);
     setSessions(updated);
+    setSessionTotal(n);
   }
 
   async function handleUpdateSession(
@@ -158,6 +164,15 @@ export default function App() {
     await updateSession(id, client_id, started_at, ended_at, duration_seconds, notes);
     const updated = await loadSessions();
     setSessions(updated);
+  }
+
+  async function handleClearSessions(): Promise<number> {
+    const removed = await deleteAllSessions();
+    const updated = await loadSessions();
+    setSessions(updated);
+    setSessionTotal(0);
+    setDashboardSessions([]);
+    return removed;
   }
 
   async function handleChangeSetting<K extends keyof Settings>(key: K, value: Settings[K]) {
@@ -259,7 +274,12 @@ export default function App() {
       <main className="flex-1 overflow-y-auto">
         {view === "settings" ? (
           <div className="px-6 py-10">
-            <SettingsPanel settings={settings} onChange={handleChangeSetting} />
+            <SettingsPanel
+              settings={settings}
+              onChange={handleChangeSetting}
+              sessionCount={sessionTotal}
+              onClearSessions={handleClearSessions}
+            />
           </div>
         ) : view === "dashboard" ? (
           <div className="px-6 py-8">
