@@ -13,6 +13,7 @@ import {
   clockOut,
   deleteSession,
   updateSessionNotes,
+  updateSession,
 } from "./lib/db";
 import { formatDurationShort, secondsSince } from "./lib/utils";
 import ClockPanel from "./components/ClockPanel";
@@ -20,6 +21,7 @@ import StatsBar from "./components/StatsBar";
 import SessionHistory from "./components/SessionHistory";
 import AddClientModal from "./components/AddClientModal";
 import EditClientModal from "./components/EditClientModal";
+import EditSessionModal from "./components/EditSessionModal";
 
 export default function App() {
   const [clients, setClients] = useState<Client[]>([]);
@@ -28,6 +30,7 @@ export default function App() {
   const [activeDelta, setActiveDelta] = useState(0);
   const [showAddClient, setShowAddClient] = useState(false);
   const [editingClient, setEditingClient] = useState<Client | null>(null);
+  const [editingSession, setEditingSession] = useState<Session | null>(null);
   const [selectedClientId, setSelectedClientId] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -99,6 +102,19 @@ export default function App() {
 
   async function handleDeleteSession(id: number) {
     await deleteSession(id);
+    const updated = await loadSessions();
+    setSessions(updated);
+  }
+
+  async function handleUpdateSession(
+    id: number,
+    client_id: number | null,
+    started_at: string,
+    ended_at: string,
+    duration_seconds: number,
+    notes: string
+  ) {
+    await updateSession(id, client_id, started_at, ended_at, duration_seconds, notes);
     const updated = await loadSessions();
     setSessions(updated);
   }
@@ -220,7 +236,12 @@ export default function App() {
             </div>
           </div>
           <div className="bg-surface border border-border rounded-xl overflow-hidden">
-            <SessionHistory sessions={sessions} onDelete={handleDeleteSession} onUpdateNotes={handleUpdateSessionNotes} />
+            <SessionHistory
+              sessions={sessions}
+              onDelete={handleDeleteSession}
+              onUpdateNotes={handleUpdateSessionNotes}
+              onEdit={setEditingSession}
+            />
           </div>
         </div>
       </main>
@@ -229,6 +250,16 @@ export default function App() {
         <AddClientModal
           onAdd={handleAddClient}
           onClose={() => setShowAddClient(false)}
+        />
+      )}
+
+      {editingSession && (
+        <EditSessionModal
+          session={editingSession}
+          clients={clients}
+          onSave={handleUpdateSession}
+          onDelete={handleDeleteSession}
+          onClose={() => setEditingSession(null)}
         />
       )}
 

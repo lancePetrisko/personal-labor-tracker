@@ -115,3 +115,18 @@ export async function updateSessionNotes(id: number, notes: string): Promise<voi
   const db = await getDb();
   await db.execute("UPDATE sessions SET notes = $1 WHERE id = $2", [notes || null, id]);
 }
+
+export async function updateSession(
+  id: number,
+  client_id: number | null,
+  started_at: string,
+  ended_at: string,
+  duration_seconds: number,
+  notes: string
+): Promise<void> {
+  const db = await getDb();
+  await db.execute(
+    "UPDATE sessions SET client_id = $1, started_at = $2, ended_at = $3, duration_seconds = $4, notes = $5 WHERE id = $6",
+    [client_id, started_at, ended_at, duration_seconds, notes || null, id]
+  );
+}

@@ -84,3 +84,23 @@ export const CLIENT_COLORS = [
   "#f97316",
   "#14b8a6",
 ];
+
+/** ISO string -> value for an <input type="datetime-local"> in the user's local timezone. */
+export function toLocalInputValue(iso: string): string {
+  const d = new Date(iso);
+  const pad = (n: number) => n.toString().padStart(2, "0");
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
+/** <input type="datetime-local"> value (local time) -> ISO string. */
+export function fromLocalInputValue(value: string): string {
+  return new Date(value).toISOString();
+}
+
+export function splitDuration(seconds: number): { h: number; m: number; s: number } {
+  return {
+    h: Math.floor(seconds / 3600),
+    m: Math.floor((seconds % 3600) / 60),
+    s: seconds % 60,
+  };
+}
