@@ -1,10 +1,25 @@
+export type RangeKey = "7d" | "30d" | "90d" | "year" | "all";
+
+export const RANGE_KEYS: RangeKey[] = ["7d", "30d", "90d", "year", "all"];
+
+export const RANGE_LABELS: Record<RangeKey, string> = {
+  "7d": "7 Days",
+  "30d": "30 Days",
+  "90d": "90 Days",
+  year: "This Year",
+  all: "All Time",
+};
+
 export interface Settings {
   /** Rows of session history visible before the list scrolls. */
   historyLength: number;
+  /** Window the Dashboard tab aggregates over. */
+  dashboardRange: RangeKey;
 }
 
 export const DEFAULT_SETTINGS: Settings = {
   historyLength: 5,
+  dashboardRange: "30d",
 };
 
 export const HISTORY_LENGTH_MIN = 1;
@@ -22,5 +37,8 @@ export function parseSettings(rows: Record<string, string>): Settings {
       rows.historyLength != null
         ? clampHistoryLength(Number(rows.historyLength))
         : DEFAULT_SETTINGS.historyLength,
+    dashboardRange: RANGE_KEYS.includes(rows.dashboardRange as RangeKey)
+      ? (rows.dashboardRange as RangeKey)
+      : DEFAULT_SETTINGS.dashboardRange,
   };
 }

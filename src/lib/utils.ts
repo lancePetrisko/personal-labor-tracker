@@ -74,15 +74,18 @@ export function earningsInWindow(
   }, 0);
 }
 
+// Ordered so neighbouring assignments stay tellable apart (validated with the
+// dataviz palette checker); hues themselves are unchanged, so existing client
+// colors still match a swatch.
 export const CLIENT_COLORS = [
   "#6366f1",
-  "#ec4899",
   "#f59e0b",
+  "#14b8a6",
+  "#ec4899",
   "#10b981",
-  "#3b82f6",
   "#8b5cf6",
   "#f97316",
-  "#14b8a6",
+  "#3b82f6",
 ];
 
 /** ISO string -> value for an <input type="datetime-local"> in the user's local timezone. */

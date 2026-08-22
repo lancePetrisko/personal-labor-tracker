@@ -16,6 +16,7 @@ import {
   updateSession,
   loadSettings,
   saveSetting,
+  loadSessionsSince,
 } from "./lib/db";
 import { formatDurationShort, secondsSince } from "./lib/utils";
 import ClockPanel from "./components/ClockPanel";
@@ -26,6 +27,8 @@ import EditClientModal from "./components/EditClientModal";
 import EditSessionModal from "./components/EditSessionModal";
 import ClientOptionsPanel from "./components/ClientOptionsPanel";
 import SettingsPanel from "./components/SettingsPanel";
+import Dashboard from "./components/Dashboard";
+import { rangeStart } from "./lib/analytics";
 import type { Settings } from "./lib/settings";
 import { DEFAULT_SETTINGS, parseSettings } from "./lib/settings";
 
@@ -39,7 +42,9 @@ export default function App() {
   const [editingSession, setEditingSession] = useState<Session | null>(null);
   const [selectedClientId, setSelectedClientId] = useState<number | null>(null);
   const [settings, setSettings] = useState<Settings>(DEFAULT_SETTINGS);
-  const [view, setView] = useState<"tracker" | "settings">("tracker");
+  const [view, setView] = useState<"tracker" | "dashboard" | "settings">("tracker");
+  const [dashboardSessions, setDashboardSessions] = useState<Session[]>([]);
+  const [dashboardLoading, setDashboardLoading] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -78,6 +83,26 @@ export default function App() {
     }, 1000);
     return () => clearInterval(interval);
   }, [activeSession]);
+
+  // Dashboard reads the full (unlimited) session set for its range; `sessions`
+  // is in the deps so edits made on the Tracker tab flow through here too.
+  useEffect(() => {
+    if (view !== "dashboard") return;
+    let cancelled = false;
+    const since = rangeStart(settings.dashboardRange);
+    setDashboardLoading(true);
+    loadSessionsSince(since ? since.toISOString() : null)
+      .then((rows) => {
+        if (!cancelled) setDashboardSessions(rows);
+      })
+      .catch((e) => setError(String(e)))
+      .finally(() => {
+        if (!cancelled) setDashboardLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [view, settings.dashboardRange, sessions]);
 
   async function handleClockIn(clientId: number | null, notes: string) {
     const session = await clockIn(clientId, notes);
@@ -172,7 +197,7 @@ export default function App() {
             <span className="font-semibold text-white tracking-tight">Labor Tracker</span>
           </div>
           <nav className="flex items-center gap-1">
-            {([["tracker", "Tracker"], ["settings", "Settings"]] as const).map(([id, label]) => (
+            {([["tracker", "Tracker"], ["dashboard", "Dashboard"], ["settings", "Settings"]] as const).map(([id, label]) => (
               <button
                 key={id}
                 onClick={() => setView(id)}
@@ -236,6 +261,16 @@ export default function App() {
           <div className="px-6 py-10">
             <SettingsPanel settings={settings} onChange={handleChangeSetting} />
           </div>
+        ) : view === "dashboard" ? (
+          <div className="px-6 py-8">
+            <Dashboard
+              sessions={dashboardSessions}
+              clients={clients}
+              range={settings.dashboardRange}
+              onRangeChange={(range) => handleChangeSetting("dashboardRange", range)}
+              loading={dashboardLoading}
+            />
+          </div>
         ) : (
         <>
         {/* Clock panel */}
@@ -268,6 +303,8 @@ export default function App() {
             clients={clients}
             activeDelta={activeDelta}
             activeClientId={activeSession?.client_id}
+            filterClientId={activeSession ? activeSession.client_id : selectedClientId}
+            onClearFilter={activeSession ? undefined : () => setSelectedClientId(null)}
           />
         </div>
 

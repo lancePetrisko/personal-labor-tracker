@@ -92,6 +92,22 @@ export async function loadSessions(): Promise<Session[]> {
   `);
 }
 
+/** Every finished session in a window — no LIMIT, for analytics. `null` means all time. */
+export async function loadSessionsSince(sinceIso: string | null): Promise<Session[]> {
+  const db = await getDb();
+  const where = sinceIso ? "WHERE s.ended_at IS NOT NULL AND s.started_at >= $1" : "WHERE s.ended_at IS NOT NULL";
+  return db.select<Session[]>(
+    `SELECT
+      s.id, s.client_id, s.started_at, s.ended_at, s.notes, s.duration_seconds,
+      c.name as client_name, c.color as client_color
+    FROM sessions s
+    LEFT JOIN clients c ON s.client_id = c.id
+    ${where}
+    ORDER BY s.started_at ASC`,
+    sinceIso ? [sinceIso] : []
+  );
+}
+
 export async function getActiveSession(): Promise<ActiveSession | null> {
   const db = await getDb();
   const rows = await db.select<ActiveSession[]>(
