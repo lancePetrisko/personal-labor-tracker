@@ -1,6 +1,7 @@
 import { useState } from "react";
 import type { Client, ActiveSession } from "../lib/types";
 import LiveTimer from "./LiveTimer";
+import ClientSelect from "./ClientSelect";
 
 interface Props {
   clients: Client[];
@@ -88,18 +89,11 @@ export default function ClockPanel({ clients, activeSession, selectedClientId, o
       {!isActive && (
         <div className="w-full max-w-xs flex flex-col gap-2">
           <label className="text-xs text-muted uppercase tracking-wider">Client</label>
-          <select
-            value={selectedClientId ?? ""}
-            onChange={(e) => onSelectClient(e.target.value ? Number(e.target.value) : null)}
-            className="bg-surface-2 border border-border rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-accent"
-          >
-            <option value="">No client</option>
-            {clients.map((c) => (
-              <option key={c.id} value={c.id}>
-                {c.name}
-              </option>
-            ))}
-          </select>
+          <ClientSelect
+            clients={clients}
+            value={selectedClientId}
+            onChange={onSelectClient}
+          />
         </div>
       )}
 
