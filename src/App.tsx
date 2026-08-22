@@ -14,6 +14,8 @@ import {
   deleteSession,
   updateSessionNotes,
   updateSession,
+  loadSettings,
+  saveSetting,
 } from "./lib/db";
 import { formatDurationShort, secondsSince } from "./lib/utils";
 import ClockPanel from "./components/ClockPanel";
@@ -22,6 +24,10 @@ import SessionHistory from "./components/SessionHistory";
 import AddClientModal from "./components/AddClientModal";
 import EditClientModal from "./components/EditClientModal";
 import EditSessionModal from "./components/EditSessionModal";
+import ClientOptionsPanel from "./components/ClientOptionsPanel";
+import SettingsPanel from "./components/SettingsPanel";
+import type { Settings } from "./lib/settings";
+import { DEFAULT_SETTINGS, parseSettings } from "./lib/settings";
 
 export default function App() {
   const [clients, setClients] = useState<Client[]>([]);
@@ -32,14 +38,22 @@ export default function App() {
   const [editingClient, setEditingClient] = useState<Client | null>(null);
   const [editingSession, setEditingSession] = useState<Session | null>(null);
   const [selectedClientId, setSelectedClientId] = useState<number | null>(null);
+  const [settings, setSettings] = useState<Settings>(DEFAULT_SETTINGS);
+  const [view, setView] = useState<"tracker" | "settings">("tracker");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   const refresh = useCallback(async () => {
-    const [c, s, a] = await Promise.all([loadClients(), loadSessions(), getActiveSession()]);
+    const [c, s, a, cfg] = await Promise.all([
+      loadClients(),
+      loadSessions(),
+      getActiveSession(),
+      loadSettings(),
+    ]);
     setClients(c);
     setSessions(s);
     setActiveSession(a);
+    setSettings(parseSettings(cfg));
     if (a) setActiveDelta(secondsSince(a.started_at));
   }, []);
 
@@ -89,8 +103,10 @@ export default function App() {
 
   async function handleUpdateClient(id: number, name: string, rate: number | null, color: string) {
     await updateClient(id, name, rate, color);
-    const updated = await loadClients();
-    setClients(updated);
+    // Sessions carry the client name/color from a JOIN, so refresh them too
+    const [updatedClients, updatedSessions] = await Promise.all([loadClients(), loadSessions()]);
+    setClients(updatedClients);
+    setSessions(updatedSessions);
   }
 
   async function handleDeleteClient(id: number) {
@@ -119,6 +135,11 @@ export default function App() {
     setSessions(updated);
   }
 
+  async function handleChangeSetting<K extends keyof Settings>(key: K, value: Settings[K]) {
+    await saveSetting(key, String(value));
+    setSettings((prev) => ({ ...prev, [key]: value }));
+  }
+
   async function handleUpdateSessionNotes(id: number, notes: string) {
     await updateSessionNotes(id, notes);
     setSessions((prev) => prev.map((s) => s.id === id ? { ...s, notes: notes || null } : s));
@@ -145,9 +166,26 @@ export default function App() {
     <div className="h-screen flex flex-col bg-bg overflow-hidden">
       {/* Header */}
       <header className="flex items-center justify-between px-6 py-4 border-b border-border shrink-0">
-        <div className="flex items-center gap-3">
-          <span className="text-accent text-lg">◷</span>
-          <span className="font-semibold text-white tracking-tight">Labor Tracker</span>
+        <div className="flex items-center gap-5">
+          <div className="flex items-center gap-3">
+            <span className="text-accent text-lg">◷</span>
+            <span className="font-semibold text-white tracking-tight">Labor Tracker</span>
+          </div>
+          <nav className="flex items-center gap-1">
+            {([["tracker", "Tracker"], ["settings", "Settings"]] as const).map(([id, label]) => (
+              <button
+                key={id}
+                onClick={() => setView(id)}
+                className={`px-3 py-1.5 rounded-lg text-xs transition-colors ${
+                  view === id
+                    ? "bg-surface-2 text-white"
+                    : "text-muted hover:text-white hover:bg-surface"
+                }`}
+              >
+                {label}
+              </button>
+            ))}
+          </nav>
         </div>
         <div className="flex items-center gap-2">
           {clients.length > 0 && (
@@ -194,6 +232,12 @@ export default function App() {
 
       {/* Main content */}
       <main className="flex-1 overflow-y-auto">
+        {view === "settings" ? (
+          <div className="px-6 py-10">
+            <SettingsPanel settings={settings} onChange={handleChangeSetting} />
+          </div>
+        ) : (
+        <>
         {/* Clock panel */}
         <div className="flex justify-center px-6 py-10 border-b border-border">
           <ClockPanel
@@ -203,6 +247,17 @@ export default function App() {
             onSelectClient={setSelectedClientId}
             onClockIn={handleClockIn}
             onClockOut={handleClockOut}
+          />
+        </div>
+
+        {/* Client options */}
+        <div className="px-6 py-4 border-b border-border">
+          <ClientOptionsPanel
+            clients={clients}
+            selectedClientId={activeSession ? activeSession.client_id : selectedClientId}
+            onSelectClient={setSelectedClientId}
+            onSave={handleUpdateClient}
+            locked={!!activeSession}
           />
         </div>
 
@@ -241,9 +296,12 @@ export default function App() {
               onDelete={handleDeleteSession}
               onUpdateNotes={handleUpdateSessionNotes}
               onEdit={setEditingSession}
+              historyLength={settings.historyLength}
             />
           </div>
         </div>
+        </>
+        )}
       </main>
 
       {showAddClient && (

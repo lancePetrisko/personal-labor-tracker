@@ -30,6 +30,26 @@ async function initSchema(db: Database) {
       duration_seconds INTEGER
     )
   `);
+  await db.execute(`
+    CREATE TABLE IF NOT EXISTS settings (
+      key TEXT PRIMARY KEY,
+      value TEXT NOT NULL
+    )
+  `);
+}
+
+export async function loadSettings(): Promise<Record<string, string>> {
+  const db = await getDb();
+  const rows = await db.select<{ key: string; value: string }[]>("SELECT key, value FROM settings");
+  return Object.fromEntries(rows.map((r) => [r.key, r.value]));
+}
+
+export async function saveSetting(key: string, value: string): Promise<void> {
+  const db = await getDb();
+  await db.execute(
+    "INSERT INTO settings (key, value) VALUES ($1, $2) ON CONFLICT(key) DO UPDATE SET value = excluded.value",
+    [key, value]
+  );
 }
 
 export async function loadClients(): Promise<Client[]> {

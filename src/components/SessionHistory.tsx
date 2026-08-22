@@ -2,15 +2,22 @@ import { useState, useRef } from "react";
 import type { Session } from "../lib/types";
 import { formatDate, formatTime, formatDurationShort } from "../lib/utils";
 
+/** Fixed height per row so `historyLength` maps to an exact scroll viewport. */
+const ROW_HEIGHT = 56;
+
 interface Props {
   sessions: Session[];
   onDelete: (id: number) => Promise<void>;
   onUpdateNotes: (id: number, notes: string) => Promise<void>;
   onEdit: (session: Session) => void;
+  /** Rows visible before the list scrolls. */
+  historyLength: number;
 }
 
-export default function SessionHistory({ sessions, onDelete, onUpdateNotes, onEdit }: Props) {
-  const [menuOpen, setMenuOpen] = useState<number | null>(null);
+const COLS = "grid grid-cols-[36px_1fr_120px_80px_1fr_72px] gap-4 px-4";
+
+export default function SessionHistory({ sessions, onDelete, onUpdateNotes, onEdit, historyLength }: Props) {
+  const [confirmDelete, setConfirmDelete] = useState<number | null>(null);
   const [deleting, setDeleting] = useState<number | null>(null);
   const [editingNotes, setEditingNotes] = useState<number | null>(null);
   const [draftNotes, setDraftNotes] = useState("");
@@ -34,7 +41,7 @@ export default function SessionHistory({ sessions, onDelete, onUpdateNotes, onEd
 
   async function handleDelete(id: number) {
     setDeleting(id);
-    setMenuOpen(null);
+    setConfirmDelete(null);
     try {
       await onDelete(id);
     } finally {
@@ -51,10 +58,13 @@ export default function SessionHistory({ sessions, onDelete, onUpdateNotes, onEd
     );
   }
 
+  const scrolls = sessions.length > historyLength;
+
   return (
     <div className="flex flex-col">
       {/* Header */}
-      <div className="grid grid-cols-[1fr_140px_80px_1fr_72px] gap-4 px-4 py-2 text-xs text-muted uppercase tracking-wider border-b border-border">
+      <div className={`${COLS} py-2 text-xs text-muted uppercase tracking-wider border-b border-border`}>
+        <span>#</span>
         <span>Date</span>
         <span>Duration</span>
         <span>Client</span>
@@ -62,17 +72,24 @@ export default function SessionHistory({ sessions, onDelete, onUpdateNotes, onEd
         <span />
       </div>
 
-      {/* Rows */}
-      <div className="flex flex-col divide-y divide-border/50">
-        {sessions.map((session) => (
+      {/* Rows — capped to `historyLength` rows tall, scrolls past that */}
+      <div
+        className="flex flex-col divide-y divide-border/50 overflow-y-auto"
+        style={{ maxHeight: historyLength * ROW_HEIGHT }}
+      >
+        {sessions.map((session, i) => (
           <div
             key={session.id}
-            className="grid grid-cols-[1fr_140px_80px_1fr_72px] gap-4 px-4 py-3 items-center hover:bg-surface/60 transition-colors relative"
+            className={`${COLS} items-center hover:bg-surface/60 transition-colors shrink-0`}
+            style={{ height: ROW_HEIGHT }}
           >
+            {/* Position in the list */}
+            <span className="font-mono text-xs text-[#444] tabular-nums">{i + 1}</span>
+
             {/* Date + time */}
-            <div className="flex flex-col gap-0.5">
-              <span className="text-sm text-white">{formatDate(session.started_at)}</span>
-              <span className="text-xs text-muted">{formatTime(session.started_at)}</span>
+            <div className="flex flex-col gap-0.5 min-w-0">
+              <span className="text-sm text-white truncate">{formatDate(session.started_at)}</span>
+              <span className="text-xs text-muted truncate">{formatTime(session.started_at)}</span>
             </div>
 
             {/* Duration */}
@@ -83,10 +100,10 @@ export default function SessionHistory({ sessions, onDelete, onUpdateNotes, onEd
             </span>
 
             {/* Client badge */}
-            <div>
+            <div className="min-w-0">
               {session.client_name ? (
                 <span
-                  className="text-xs px-2 py-0.5 rounded-full font-medium"
+                  className="text-xs px-2 py-0.5 rounded-full font-medium inline-block max-w-full truncate"
                   style={{
                     background: `${session.client_color ?? "#6366f1"}22`,
                     color: session.client_color ?? "#6366f1",
@@ -121,7 +138,7 @@ export default function SessionHistory({ sessions, onDelete, onUpdateNotes, onEd
             )}
 
             {/* Row actions */}
-            <div className="flex items-center justify-end gap-1 relative">
+            <div className="flex items-center justify-end gap-1">
               <button
                 onClick={() => onEdit(session)}
                 title="Edit session"
@@ -129,42 +146,35 @@ export default function SessionHistory({ sessions, onDelete, onUpdateNotes, onEd
               >
                 &#9998;
               </button>
-              <div className="relative">
+              {confirmDelete === session.id ? (
                 <button
-                  onClick={() => setMenuOpen(menuOpen === session.id ? null : session.id)}
-                  title="More"
-                  className="w-7 h-7 flex items-center justify-center rounded-lg text-muted hover:text-white hover:bg-surface-2 transition-colors text-lg leading-none"
+                  onClick={() => handleDelete(session.id)}
+                  onMouseLeave={() => setConfirmDelete(null)}
+                  disabled={deleting === session.id}
+                  title="Click again to delete"
+                  className="h-7 px-2 flex items-center justify-center rounded-lg bg-danger/15 border border-danger/40 text-danger text-[10px] font-medium uppercase tracking-wider transition-colors hover:bg-danger/25 disabled:opacity-50"
                 >
-                  &#8942;
+                  {deleting === session.id ? "..." : "Sure?"}
                 </button>
-                {menuOpen === session.id && (
-                  <>
-                    <div
-                      className="fixed inset-0 z-10"
-                      onClick={() => setMenuOpen(null)}
-                    />
-                    <div className="absolute right-0 top-8 z-20 bg-surface border border-border rounded-lg overflow-hidden shadow-xl min-w-[120px]">
-                      <button
-                        onClick={() => { setMenuOpen(null); onEdit(session); }}
-                        className="w-full px-4 py-2 text-left text-sm text-white hover:bg-surface-2 transition-colors"
-                      >
-                        Edit
-                      </button>
-                      <button
-                        onClick={() => handleDelete(session.id)}
-                        disabled={deleting === session.id}
-                        className="w-full px-4 py-2 text-left text-sm text-danger hover:bg-danger/10 transition-colors disabled:opacity-50 border-t border-border"
-                      >
-                        {deleting === session.id ? "Deleting..." : "Delete"}
-                      </button>
-                    </div>
-                  </>
-                )}
-              </div>
+              ) : (
+                <button
+                  onClick={() => setConfirmDelete(session.id)}
+                  title="Delete session"
+                  className="w-7 h-7 flex items-center justify-center rounded-lg text-muted hover:text-danger hover:bg-danger/10 transition-colors text-xs"
+                >
+                  &#128465;
+                </button>
+              )}
             </div>
           </div>
         ))}
       </div>
+
+      {scrolls && (
+        <div className="px-4 py-1.5 text-[10px] text-[#444] uppercase tracking-wider border-t border-border/50">
+          Showing {historyLength} of {sessions.length} — scroll for more
+        </div>
+      )}
     </div>
   );
 }
