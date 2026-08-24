@@ -24,6 +24,7 @@ interface Props {
   clients: Client[];
   range: RangeKey;
   onRangeChange: (range: RangeKey) => void;
+  onExport: () => void;
   loading?: boolean;
 }
 
@@ -59,7 +60,7 @@ function Record({ label, value, sub }: { label: string; value: string; sub?: str
   );
 }
 
-export default function Dashboard({ sessions, clients, range, onRangeChange, loading }: Props) {
+export default function Dashboard({ sessions, clients, range, onRangeChange, onExport, loading }: Props) {
   const [metric, setMetric] = useState<"earnings" | "seconds">("earnings");
 
   const totals = useMemo(() => summarize(sessions, clients), [sessions, clients]);
@@ -108,9 +109,18 @@ export default function Dashboard({ sessions, clients, range, onRangeChange, loa
             </button>
           ))}
         </div>
-        <span className="text-xs text-muted">
-          {loading ? "Loading..." : `${sessions.length} ${sessions.length === 1 ? "session" : "sessions"}`}
-        </span>
+        <div className="flex items-center gap-3">
+          <span className="text-xs text-muted">
+            {loading ? "Loading..." : `${sessions.length} ${sessions.length === 1 ? "session" : "sessions"}`}
+          </span>
+          <button
+            onClick={onExport}
+            title="Export one client's sessions for a date range as a PDF you can send them"
+            className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg border border-border text-xs text-muted hover:text-white hover:border-[#444] transition-colors"
+          >
+            <span className="text-sm leading-none">&#128196;</span> Export PDF
+          </button>
+        </div>
       </div>
 
       {sessions.length === 0 && !loading ? (

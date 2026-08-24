@@ -15,12 +15,17 @@ export interface Settings {
   historyLength: number;
   /** Window the Dashboard tab aggregates over. */
   dashboardRange: RangeKey;
+  /** Name printed at the top of exported client reports. Blank falls back to "Labor Tracker". */
+  businessName: string;
 }
 
 export const DEFAULT_SETTINGS: Settings = {
   historyLength: 5,
   dashboardRange: "30d",
+  businessName: "",
 };
+
+export const BUSINESS_NAME_MAX = 60;
 
 export const HISTORY_LENGTH_MIN = 1;
 export const HISTORY_LENGTH_MAX = 100;
@@ -40,5 +45,9 @@ export function parseSettings(rows: Record<string, string>): Settings {
     dashboardRange: RANGE_KEYS.includes(rows.dashboardRange as RangeKey)
       ? (rows.dashboardRange as RangeKey)
       : DEFAULT_SETTINGS.dashboardRange,
+    businessName:
+      rows.businessName != null
+        ? rows.businessName.slice(0, BUSINESS_NAME_MAX)
+        : DEFAULT_SETTINGS.businessName,
   };
 }

@@ -25,11 +25,19 @@ fn show_in_explorer(app: tauri::AppHandle) -> Result<(), String> {
     Ok(())
 }
 
+/// Writes generated report bytes to a path the user already chose in the save
+/// dialog. Narrower than granting the fs plugin a filesystem scope.
+#[tauri::command]
+fn save_pdf(path: String, bytes: Vec<u8>) -> Result<(), String> {
+    std::fs::write(&path, bytes).map_err(|e| e.to_string())
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_sql::Builder::new().build())
-        .invoke_handler(tauri::generate_handler![show_in_explorer])
+        .plugin(tauri_plugin_dialog::init())
+        .invoke_handler(tauri::generate_handler![show_in_explorer, save_pdf])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }

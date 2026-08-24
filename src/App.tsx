@@ -1,6 +1,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { invoke } from "@tauri-apps/api/core";
+import { save } from "@tauri-apps/plugin-dialog";
 import type { Client, Session, ActiveSession } from "./lib/types";
 import {
   loadClients,
@@ -19,6 +20,7 @@ import {
   loadSessionsSince,
   deleteAllSessions,
   countSessions,
+  loadSessionsForClient,
 } from "./lib/db";
 import { formatDurationShort, secondsSince } from "./lib/utils";
 import ClockPanel from "./components/ClockPanel";
@@ -30,6 +32,9 @@ import EditSessionModal from "./components/EditSessionModal";
 import ClientOptionsPanel from "./components/ClientOptionsPanel";
 import SettingsPanel from "./components/SettingsPanel";
 import Dashboard from "./components/Dashboard";
+import ExportReportModal from "./components/ExportReportModal";
+import type { ExportRequest } from "./components/ExportReportModal";
+import { buildClientReport, reportFilename } from "./lib/report";
 import { rangeStart } from "./lib/analytics";
 import type { Settings } from "./lib/settings";
 import { DEFAULT_SETTINGS, parseSettings } from "./lib/settings";
@@ -40,6 +45,7 @@ export default function App() {
   const [activeSession, setActiveSession] = useState<ActiveSession | null>(null);
   const [activeDelta, setActiveDelta] = useState(0);
   const [showAddClient, setShowAddClient] = useState(false);
+  const [showExport, setShowExport] = useState(false);
   const [editingClient, setEditingClient] = useState<Client | null>(null);
   const [editingSession, setEditingSession] = useState<Session | null>(null);
   const [selectedClientId, setSelectedClientId] = useState<number | null>(null);
@@ -180,6 +186,52 @@ export default function App() {
     setSettings((prev) => ({ ...prev, [key]: value }));
   }
 
+  /** Feeds the export modal's preview line; the modal never touches the DB itself. */
+  const handlePreviewReport = useCallback(
+    (clientId: number, sinceIso: string, untilIso: string) =>
+      loadSessionsForClient(clientId, sinceIso, untilIso),
+    []
+  );
+
+  /** Resolves false when the user dismissed the save dialog. */
+  async function handleExportReport(request: ExportRequest): Promise<boolean> {
+    const { clientId, from, to, includeNotes, includeMoney } = request;
+    const client = clients.find((c) => c.id === clientId);
+    if (!client) throw new Error("That client no longer exists.");
+
+    // Exclusive upper bound: midnight starting the day after `to`, so work
+    // logged late on the last day still lands inside the report.
+    const untilExclusive = new Date(to);
+    untilExclusive.setDate(untilExclusive.getDate() + 1);
+    untilExclusive.setHours(0, 0, 0, 0);
+
+    const rows = await loadSessionsForClient(
+      clientId,
+      from.toISOString(),
+      untilExclusive.toISOString()
+    );
+    if (rows.length === 0) throw new Error("No sessions in this range — nothing to export.");
+
+    const bytes = buildClientReport({
+      client,
+      sessions: rows,
+      from,
+      to,
+      businessName: settings.businessName,
+      includeNotes,
+      includeMoney,
+    });
+
+    const path = await save({
+      defaultPath: reportFilename(client, from, to),
+      filters: [{ name: "PDF", extensions: ["pdf"] }],
+    });
+    if (!path) return false;
+
+    await invoke("save_pdf", { path, bytes: Array.from(bytes) });
+    return true;
+  }
+
   async function handleUpdateSessionNotes(id: number, notes: string) {
     await updateSessionNotes(id, notes);
     setSessions((prev) => prev.map((s) => s.id === id ? { ...s, notes: notes || null } : s));
@@ -288,6 +340,7 @@ export default function App() {
               clients={clients}
               range={settings.dashboardRange}
               onRangeChange={(range) => handleChangeSetting("dashboardRange", range)}
+              onExport={() => setShowExport(true)}
               loading={dashboardLoading}
             />
           </div>
@@ -365,6 +418,16 @@ export default function App() {
         <AddClientModal
           onAdd={handleAddClient}
           onClose={() => setShowAddClient(false)}
+        />
+      )}
+
+      {showExport && (
+        <ExportReportModal
+          clients={clients}
+          initialClientId={selectedClientId}
+          onPreview={handlePreviewReport}
+          onExport={handleExportReport}
+          onClose={() => setShowExport(false)}
         />
       )}
 

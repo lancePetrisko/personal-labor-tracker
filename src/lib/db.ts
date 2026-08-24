@@ -108,6 +108,31 @@ export async function loadSessionsSince(sinceIso: string | null): Promise<Sessio
   );
 }
 
+/**
+ * Every finished session for one client inside a half-open window
+ * `[sinceIso, untilIso)`. No LIMIT — a client report must be complete.
+ */
+export async function loadSessionsForClient(
+  clientId: number,
+  sinceIso: string,
+  untilIso: string
+): Promise<Session[]> {
+  const db = await getDb();
+  return db.select<Session[]>(
+    `SELECT
+      s.id, s.client_id, s.started_at, s.ended_at, s.notes, s.duration_seconds,
+      c.name as client_name, c.color as client_color
+    FROM sessions s
+    LEFT JOIN clients c ON s.client_id = c.id
+    WHERE s.client_id = $1
+      AND s.ended_at IS NOT NULL
+      AND s.started_at >= $2
+      AND s.started_at < $3
+    ORDER BY s.started_at ASC`,
+    [clientId, sinceIso, untilIso]
+  );
+}
+
 export async function getActiveSession(): Promise<ActiveSession | null> {
   const db = await getDb();
   const rows = await db.select<ActiveSession[]>(
