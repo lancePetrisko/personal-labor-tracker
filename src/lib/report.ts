@@ -36,6 +36,9 @@ function hexToRgb(hex: string | null): [number, number, number] {
 function slug(text: string): string {
   return (
     text
+      .normalize("NFD")
+      // Strip combining marks so "Ünïcode" becomes "Unicode" rather than "n-code".
+      .replace(/[\u0300-\u036f]/g, "")
       .trim()
       .replace(/[^a-z0-9]+/gi, "-")
       .replace(/^-+|-+$/g, "")
@@ -84,6 +87,10 @@ function lastY(doc: jsPDF, fallback: number): number {
 
 export function buildClientReport(opts: ReportOptions): Uint8Array {
   const { client, sessions, from, to, businessName, includeNotes, includeMoney } = opts;
+
+  // A client with no hourly rate has nothing billable, and printing
+  // "Total Billable $0.00" on a report they receive reads as a mistake.
+  const showMoney = includeMoney && client.hourly_rate != null;
 
   const doc = new jsPDF({ unit: "pt", format: "a4", orientation: "portrait" });
   const pageWidth = doc.internal.pageSize.getWidth();
@@ -136,11 +143,8 @@ export function buildClientReport(opts: ReportOptions): Uint8Array {
     { label: "Sessions", value: String(totals.count) },
     { label: "Avg Session", value: formatDurationShort(avgSeconds) },
   ];
-  if (includeMoney) {
-    summary.push({
-      label: "Rate",
-      value: client.hourly_rate != null ? `${formatCurrency(client.hourly_rate)}/hr` : "—",
-    });
+  if (showMoney) {
+    summary.push({ label: "Rate", value: `${formatCurrency(client.hourly_rate ?? 0)}/hr` });
     summary.push({ label: "Total Billable", value: formatCurrency(totals.earnings) });
   }
   y = drawSummary(doc, y + 4, summary) + 18;
@@ -148,7 +152,7 @@ export function buildClientReport(opts: ReportOptions): Uint8Array {
   // --- Session detail -------------------------------------------------------
   const head: string[] = ["Date", "Start", "End", "Duration"];
   if (includeNotes) head.push("Notes");
-  if (includeMoney) head.push("Amount");
+  if (showMoney) head.push("Amount");
 
   const body = sessions.map((s) => {
     const row: string[] = [
@@ -158,24 +162,33 @@ export function buildClientReport(opts: ReportOptions): Uint8Array {
       formatDurationShort(s.duration_seconds ?? 0),
     ];
     if (includeNotes) row.push(s.notes ?? "");
-    if (includeMoney) row.push(formatCurrency(sessionEarnings(s, [client])));
+    if (showMoney) row.push(formatCurrency(sessionEarnings(s, [client])));
     return row;
   });
 
   const totalRow: string[] = ["Total", "", "", formatDurationShort(totals.seconds)];
   if (includeNotes) totalRow.push(`${totals.count} ${totals.count === 1 ? "session" : "sessions"}`);
-  if (includeMoney) totalRow.push(formatCurrency(totals.earnings));
+  if (showMoney) totalRow.push(formatCurrency(totals.earnings));
 
-  // Fixed widths for the narrow columns; Notes soaks up the remainder so long
-  // notes wrap instead of pushing the money column off the page.
+  // Notes, when present, soaks up the remaining width so long notes wrap instead
+  // of pushing the money column off the page. With no Notes column there is
+  // nothing to absorb the slack, so the fixed widths are scaled up to fill the
+  // page — otherwise autoTable leaves a ragged gap and warns about it.
+  const available = pageWidth - MARGIN * 2;
+  const fixed = [78, 52, 52, 58];
+  if (showMoney) fixed.push(66);
+  const scale = includeNotes ? 1 : available / fixed.reduce((sum, w) => sum + w, 0);
+
   const columnStyles: Record<string, { cellWidth?: number | "auto"; halign?: "left" | "right" }> = {
-    0: { cellWidth: 78 },
-    1: { cellWidth: 52 },
-    2: { cellWidth: 52 },
-    3: { cellWidth: 58, halign: "right" },
+    0: { cellWidth: fixed[0] * scale },
+    1: { cellWidth: fixed[1] * scale },
+    2: { cellWidth: fixed[2] * scale },
+    3: { cellWidth: fixed[3] * scale, halign: "right" },
   };
   if (includeNotes) columnStyles[4] = { cellWidth: "auto" };
-  if (includeMoney) columnStyles[includeNotes ? 5 : 4] = { cellWidth: 66, halign: "right" };
+  if (showMoney) {
+    columnStyles[includeNotes ? 5 : 4] = { cellWidth: fixed[4] * scale, halign: "right" };
+  }
 
   autoTable(doc, {
     startY: y,

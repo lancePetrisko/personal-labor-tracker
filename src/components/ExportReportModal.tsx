@@ -81,6 +81,11 @@ export default function ExportReportModal({ clients, initialClientId, onPreview,
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // A client with no hourly rate has nothing billable, so the report drops the
+  // money columns regardless — say so rather than leaving a toggle that does nothing.
+  const selectedClient = clients.find((c) => c.id === clientId) ?? null;
+  const hasRate = selectedClient?.hourly_rate != null;
+
   const from = fromDayValue(fromValue);
   const to = fromDayValue(toValue);
   const rangeValid = from != null && to != null && from <= to;
@@ -200,15 +205,25 @@ export default function ExportReportModal({ clients, initialClientId, onPreview,
               />
               Include session notes
             </label>
-            <label className="flex items-center gap-2 text-sm text-white cursor-pointer">
+            <label
+              className={`flex items-center gap-2 text-sm ${
+                hasRate ? "text-white cursor-pointer" : "text-muted cursor-not-allowed"
+              }`}
+            >
               <input
                 type="checkbox"
-                checked={includeMoney}
+                checked={includeMoney && hasRate}
+                disabled={!hasRate}
                 onChange={(e) => setIncludeMoney(e.target.checked)}
                 className="accent-accent"
               />
               Include rate &amp; amounts
             </label>
+            {clientId != null && !hasRate && (
+              <p className="text-xs text-muted -mt-1">
+                {selectedClient?.name} has no hourly rate, so the report shows hours only.
+              </p>
+            )}
           </div>
 
           <div className="bg-surface-2 border border-border rounded-lg px-3 py-2 text-xs text-muted">

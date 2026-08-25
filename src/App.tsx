@@ -34,7 +34,6 @@ import SettingsPanel from "./components/SettingsPanel";
 import Dashboard from "./components/Dashboard";
 import ExportReportModal from "./components/ExportReportModal";
 import type { ExportRequest } from "./components/ExportReportModal";
-import { buildClientReport, reportFilename } from "./lib/report";
 import { rangeStart } from "./lib/analytics";
 import type { Settings } from "./lib/settings";
 import { DEFAULT_SETTINGS, parseSettings } from "./lib/settings";
@@ -196,6 +195,9 @@ export default function App() {
   /** Resolves false when the user dismissed the save dialog. */
   async function handleExportReport(request: ExportRequest): Promise<boolean> {
     const { clientId, from, to, includeNotes, includeMoney } = request;
+    // Lazy so jsPDF stays out of the startup bundle — it is only needed here.
+    const { buildClientReport, reportFilename } = await import("./lib/report");
+
     const client = clients.find((c) => c.id === clientId);
     if (!client) throw new Error("That client no longer exists.");
 
