@@ -37,6 +37,8 @@ import type { ExportRequest } from "./components/ExportReportModal";
 import { rangeStart } from "./lib/analytics";
 import type { Settings } from "./lib/settings";
 import { DEFAULT_SETTINGS, parseSettings } from "./lib/settings";
+import type { VersionInfo } from "./lib/version";
+import { BUILD_VERSION, loadVersion } from "./lib/version";
 
 export default function App() {
   const [clients, setClients] = useState<Client[]>([]);
@@ -55,6 +57,7 @@ export default function App() {
   const [sessionTotal, setSessionTotal] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [version, setVersion] = useState<VersionInfo>({ app: BUILD_VERSION, tauri: null });
 
   const refresh = useCallback(async () => {
     const [c, s, a, cfg, n] = await Promise.all([
@@ -77,6 +80,12 @@ export default function App() {
       .catch((e) => setError(String(e)))
       .finally(() => setLoading(false));
   }, [refresh]);
+
+  // Version comes from the Tauri shell so it reflects the installed build,
+  // not whatever was bundled into the frontend.
+  useEffect(() => {
+    loadVersion().then(setVersion);
+  }, []);
 
   // Update window title to show current session duration
   useEffect(() => {
@@ -264,6 +273,13 @@ export default function App() {
           <div className="flex items-center gap-3">
             <span className="text-accent text-lg">◷</span>
             <span className="font-semibold text-white tracking-tight">Labor Tracker</span>
+            <button
+              onClick={() => setView("settings")}
+              title="View version details in Settings"
+              className="font-mono text-[10px] text-muted px-1.5 py-0.5 rounded-md border border-border hover:text-white hover:border-[#444] transition-colors"
+            >
+              v{version.app}
+            </button>
           </div>
           <nav className="flex items-center gap-1">
             {([["tracker", "Tracker"], ["dashboard", "Dashboard"], ["settings", "Settings"]] as const).map(([id, label]) => (
@@ -333,6 +349,7 @@ export default function App() {
               onChange={handleChangeSetting}
               sessionCount={sessionTotal}
               onClearSessions={handleClearSessions}
+              version={version}
             />
           </div>
         ) : view === "dashboard" ? (

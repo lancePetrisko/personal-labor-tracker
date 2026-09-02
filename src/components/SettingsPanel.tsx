@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import type { Settings } from "../lib/settings";
+import type { VersionInfo } from "../lib/version";
 import {
   BUSINESS_NAME_MAX,
   HISTORY_LENGTH_MIN,
@@ -14,6 +15,8 @@ interface Props {
   sessionCount: number;
   /** Wipes every finished session; resolves with how many were removed. */
   onClearSessions: () => Promise<number>;
+  /** App + Tauri versions of the running build. */
+  version: VersionInfo;
 }
 
 /** Seconds the armed delete button stays armed before disarming itself. */
@@ -21,7 +24,13 @@ const CONFIRM_TIMEOUT_MS = 5000;
 
 const PRESETS = [5, 10, 25, 50];
 
-export default function SettingsPanel({ settings, onChange, sessionCount, onClearSessions }: Props) {
+export default function SettingsPanel({
+  settings,
+  onChange,
+  sessionCount,
+  onClearSessions,
+  version,
+}: Props) {
   const [draft, setDraft] = useState(String(settings.historyLength));
   const [nameDraft, setNameDraft] = useState(settings.businessName);
   const [armed, setArmed] = useState(false);
@@ -136,6 +145,26 @@ export default function SettingsPanel({ settings, onChange, sessionCount, onClea
             }}
             className="bg-surface-2 border border-border rounded-lg px-3 py-2 text-sm text-white placeholder:text-[#444] focus:outline-none focus:border-accent"
           />
+        </div>
+      </section>
+
+      <section className="bg-surface border border-border rounded-xl p-5 flex flex-col gap-4">
+        <span className="text-xs text-muted uppercase tracking-wider font-medium">About</span>
+
+        <div className="flex flex-col gap-2.5">
+          <div className="flex items-center justify-between">
+            <span className="text-sm text-white">Version</span>
+            <span className="font-mono text-sm text-accent">v{version.app}</span>
+          </div>
+          <div className="flex items-center justify-between">
+            <span className="text-sm text-muted">Tauri runtime</span>
+            <span className="font-mono text-xs text-muted">
+              {version.tauri ?? "not running in the desktop shell"}
+            </span>
+          </div>
+          <p className="text-[10px] text-[#444] mt-1">
+            Reported by the app bundle itself, so it reflects the build you actually installed.
+          </p>
         </div>
       </section>
 

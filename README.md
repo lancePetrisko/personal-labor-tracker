@@ -12,6 +12,7 @@ A lightweight desktop app for tracking billable hours by client. Built with Taur
 - Stats for today, this week, this month, and all time
 - Window title updates with elapsed time while clocked in
 - Session history with delete
+- Version badge in the header, with app + Tauri versions under Settings → About
 
 ## Prerequisites
 
@@ -250,6 +251,42 @@ Pushing a `v*` tag (e.g. `git tag v0.1.0 && git push origin v0.1.0`) triggers
 `.github/workflows/release.yml`, which builds on both `macos-latest` and `windows-latest` and attaches
 the installers to a **draft** GitHub Release. The same Gatekeeper caveat applies to the CI `.dmg`.
 
+## Versioning
+
+`package.json` is the single source of truth. `src-tauri/tauri.conf.json` reads from it
+(`"version": "../package.json"`), and Vite injects the same value into the frontend bundle, so the
+number in the UI, the `.app` bundle, and the `.dmg` filename can never drift apart.
+
+**Where the version shows up**
+
+| Place                       | What you see                                                     |
+| --------------------------- | ---------------------------------------------------------------- |
+| App header                  | A `v0.1.0` badge next to the title — click it to open Settings   |
+| Settings → About            | App version plus the Tauri runtime version                        |
+| macOS "Get Info" on the app | `CFBundleShortVersionString`, taken from the same field           |
+| Bundle filenames            | `Labor Tracker_0.1.0_aarch64.dmg`                                 |
+
+In the app the version is read from the Tauri shell at runtime, so it reports the build you actually
+installed. Running `npm run dev` in a plain browser has no shell to ask, so it falls back to the
+value compiled in at build time and shows "not running in the desktop shell" for the runtime.
+
+**Bumping the version**
+
+```bash
+npm version patch     # 0.1.0 → 0.1.1   (bugfixes)
+npm version minor     # 0.1.0 → 0.2.0   (new features)
+npm version major     # 0.1.0 → 1.0.0   (breaking changes)
+```
+
+`npm version` edits `package.json`, commits, and creates a matching `v*` git tag. Push the tag to
+kick off the release workflow:
+
+```bash
+git push && git push --tags
+```
+
+Rebuild afterwards (`npm run tauri build`) so the bundle picks up the new number.
+
 ## Where data is stored
 
 The SQLite database (`labor.db`) is stored in the OS app data directory:
@@ -277,7 +314,8 @@ personal-labor-tracker/
 │   └── lib/
 │       ├── db.ts               # All SQLite operations
 │       ├── types.ts            # TypeScript interfaces
-│       └── utils.ts            # Date/duration formatting helpers
+│       ├── utils.ts            # Date/duration formatting helpers
+│       └── version.ts          # App/Tauri version lookup for the UI
 ├── src-tauri/                  # Rust / Tauri backend
 │   ├── src/
 │   │   ├── main.rs
