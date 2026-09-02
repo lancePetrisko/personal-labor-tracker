@@ -98,6 +98,141 @@ architecture. For an Intel or universal build, pass a target explicitly:
 npm run tauri build -- --target universal-apple-darwin   # requires: rustup target add x86_64-apple-darwin
 ```
 
+### Step-by-step: building on an Apple Silicon Mac (M1/M2/M3)
+
+This walkthrough produces `Labor Tracker.app` and a `.dmg` for the `aarch64-apple-darwin` target —
+the native architecture of an M1 MacBook. Total time on a first build is roughly 5–8 minutes, almost
+all of it Cargo compiling the Rust dependencies.
+
+**1. Install the Xcode command line tools**
+
+```bash
+xcode-select --install
+```
+
+If it prints `command line tools are already installed`, you are done with this step. This provides
+`clang`, `ld`, and the macOS SDK that the Rust linker needs.
+
+**2. Install Rust**
+
+```bash
+curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
+```
+
+Accept the default installation. Then either restart your terminal or run:
+
+```bash
+source "$HOME/.cargo/env"
+```
+
+**3. Confirm the toolchain targets Apple Silicon**
+
+```bash
+rustc -vV | grep host
+# host: aarch64-apple-darwin
+```
+
+If it says `x86_64-apple-darwin`, your terminal is running under Rosetta. Quit it, uncheck
+**Open using Rosetta** in Finder (right-click Terminal → Get Info), reopen, and reinstall Rust.
+
+**4. Install Node.js 18 or later**
+
+```bash
+node --version
+```
+
+If Node is missing or older than v18, install it from [nodejs.org](https://nodejs.org) or with
+Homebrew (`brew install node`).
+
+**5. Clone and install dependencies**
+
+```bash
+git clone https://github.com/lancePetrisko/personal-labor-tracker.git
+cd personal-labor-tracker
+npm install
+```
+
+**6. Sanity check in dev mode (optional but recommended)**
+
+```bash
+npm run tauri dev
+```
+
+An app window should open. Confirm you can clock in and out, then quit the window before building —
+a running dev instance holds a lock on the build directory.
+
+**7. Build the release bundle**
+
+```bash
+npm run tauri build
+```
+
+Cargo compiles in release mode with optimizations, so expect several minutes and a warm laptop. The
+build finishes with a line pointing at the bundle directory.
+
+**8. Collect the output**
+
+```bash
+open src-tauri/target/release/bundle/macos/     # the .app
+open src-tauri/target/release/bundle/dmg/       # the .dmg
+```
+
+| File                                      | What to do with it                       |
+| ----------------------------------------- | ---------------------------------------- |
+| `macos/Labor Tracker.app`                 | Drag into `/Applications` to install     |
+| `dmg/Labor Tracker_0.1.0_aarch64.dmg`     | Hand to someone else with an M-series Mac |
+
+**9. Install it**
+
+Double-click the `.dmg` and drag the app onto **Applications** — see
+[Installing from the .dmg](#installing-from-the-dmg-macos) below for the full flow.
+
+The installed app reads and writes
+`~/Library/Application Support/com.labortracker.app/labor.db` — the same file `npm run tauri dev`
+uses, so any sessions you logged in dev mode are already there.
+
+**Troubleshooting**
+
+| Symptom                                              | Fix                                                                                     |
+| ---------------------------------------------------- | --------------------------------------------------------------------------------------- |
+| `xcrun: error: invalid active developer path`         | Rerun `xcode-select --install`                                                            |
+| `linker 'cc' not found`                               | Command line tools missing — same fix as above                                            |
+| `error: failed to run custom build command for ...`   | `cd src-tauri && cargo clean`, then rebuild                                               |
+| Port 1420 already in use during `tauri dev`           | Another dev instance is running — `lsof -ti:1420 \| xargs kill`                            |
+| Build succeeds but no `.dmg`                          | The dmg step needs a GUI session; do not run the build over plain SSH                     |
+| `"Labor Tracker" is damaged and can't be opened`      | Gatekeeper quarantine — see the next section                                              |
+
+### Installing from the .dmg (macOS)
+
+On macOS the `.dmg` **is** the installer — there is no separate `setup.exe`-style program to run. The
+build produces one at:
+
+```
+src-tauri/target/release/bundle/dmg/Labor Tracker_<version>_aarch64.dmg
+```
+
+**To install:**
+
+1. Double-click the `.dmg` (or run `open "src-tauri/target/release/bundle/dmg/Labor Tracker_0.1.0_aarch64.dmg"`).
+2. A window opens showing the app icon next to an **Applications** shortcut.
+3. Drag **Labor Tracker** onto **Applications**.
+4. Eject the mounted disk image — drag it to the Trash, or `Cmd`+`E` in Finder.
+5. Launch from Launchpad, Spotlight, or `/Applications`.
+
+The same thing from the terminal, if you prefer:
+
+```bash
+cp -R "src-tauri/target/release/bundle/macos/Labor Tracker.app" /Applications/
+open "/Applications/Labor Tracker.app"
+```
+
+**To uninstall,** drag the app out of `/Applications`. That leaves your data behind — delete
+`~/Library/Application Support/com.labortracker.app/` as well if you want it gone.
+
+> **Note:** Tauri's macOS bundler emits `.app` and `.dmg` only — there is no `.pkg` target. A `.pkg`
+> would need `pkgbuild`/`productbuild` by hand, and unsigned it hits the same Gatekeeper prompt the
+> `.dmg` does, so it buys nothing for personal use.
+
 ### Unsigned builds on macOS
 
 These builds are **not code-signed or notarized** (that needs a paid Apple Developer account). The app
