@@ -46,12 +46,15 @@ App.tsx  →  ClockPanel, StatsBar, SessionHistory, AddClientModal
 
 ```sql
 clients  (id, name, hourly_rate REAL, color TEXT)
-sessions (id, client_id, started_at TEXT, ended_at TEXT, notes TEXT, duration_seconds INTEGER)
+sessions (id, client_id, started_at TEXT, ended_at TEXT, notes TEXT, duration_seconds INTEGER,
+          paused_at TEXT, paused_seconds INTEGER DEFAULT 0)
 ```
 
 - `started_at` / `ended_at` are ISO 8601 strings (JavaScript `new Date().toISOString()`)
-- An active session has `ended_at IS NULL`
-- `duration_seconds` is written on clock-out; compute it as `Math.round((Date.now() - new Date(started_at)) / 1000)`
+- An active session has `ended_at IS NULL`; it is paused while `paused_at IS NOT NULL`
+- `paused_seconds` accumulates finished pauses; resume folds the current pause into it
+- `duration_seconds` is written on clock-out as wall time minus all paused time (see `clockOut` in `db.ts`, `activeElapsed` in `utils.ts`)
+- Pause columns are added to existing databases by an `ALTER TABLE` check in `initSchema`
 
 ## Adding a new Tauri plugin
 
@@ -64,6 +67,7 @@ sessions (id, client_id, started_at TEXT, ended_at TEXT, notes TEXT, duration_se
 - Dark theme: background `#0a0a0a`, surface `#141414`, border `#2a2a2a`
 - Accent: `#6366f1` (indigo), active/clocked-in state: `#22c55e` (green)
 - Timer digits use `font-mono` (JetBrains Mono)
+- Sharp corners everywhere: no `rounded-*` classes, no heavy drop shadows
 - Tailwind utility classes only — no CSS modules, no inline style objects except for dynamic client colors
 - Client colors are dynamic hex values from `CLIENT_COLORS` in `utils.ts`; use inline `style` for those
 

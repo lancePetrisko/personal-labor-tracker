@@ -30,7 +30,7 @@ interface Props {
 
 function Panel({ title, subtitle, children }: { title: string; subtitle?: string; children: React.ReactNode }) {
   return (
-    <section className="bg-surface border border-border rounded-xl p-5 flex flex-col gap-4">
+    <section className="bg-surface border border-border p-5 flex flex-col gap-4">
       <div className="flex items-baseline justify-between gap-3">
         <span className="text-xs text-muted uppercase tracking-wider font-medium">{title}</span>
         {subtitle && <span className="text-[10px] text-[#444]">{subtitle}</span>}
@@ -42,7 +42,7 @@ function Panel({ title, subtitle, children }: { title: string; subtitle?: string
 
 function Hero({ label, value, sub }: { label: string; value: string; sub?: string }) {
   return (
-    <div className="bg-surface border border-border rounded-xl px-4 py-3 flex flex-col gap-1">
+    <div className="bg-surface border border-border px-4 py-3 flex flex-col gap-1">
       <span className="text-xs text-muted uppercase tracking-wider">{label}</span>
       <span className="font-mono text-2xl font-medium text-white">{value}</span>
       {sub && <span className="text-xs text-muted">{sub}</span>}
@@ -99,7 +99,7 @@ export default function Dashboard({ sessions, clients, range, onRangeChange, onE
             <button
               key={key}
               onClick={() => onRangeChange(key)}
-              className={`px-3 py-1.5 rounded-lg border text-xs transition-colors ${
+              className={`px-3 py-1.5 border text-xs transition-colors ${
                 range === key
                   ? "border-accent text-accent bg-accent/10"
                   : "border-border text-muted hover:text-white hover:border-[#444]"
@@ -116,7 +116,7 @@ export default function Dashboard({ sessions, clients, range, onRangeChange, onE
           <button
             onClick={onExport}
             title="Export one client's sessions for a date range as a PDF you can send them"
-            className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg border border-border text-xs text-muted hover:text-white hover:border-[#444] transition-colors"
+            className="flex items-center gap-1.5 px-2.5 py-1 border border-border text-xs text-muted hover:text-white hover:border-[#444] transition-colors"
           >
             <span className="text-sm leading-none">&#128196;</span> Export PDF
           </button>
@@ -124,7 +124,7 @@ export default function Dashboard({ sessions, clients, range, onRangeChange, onE
       </div>
 
       {sessions.length === 0 && !loading ? (
-        <div className="bg-surface border border-border rounded-xl py-16 flex flex-col items-center gap-2">
+        <div className="bg-surface border border-border py-16 flex flex-col items-center gap-2">
           <span className="text-[#333] text-4xl">◷</span>
           <span className="text-muted text-sm">No sessions in the last {rangeLabel}.</span>
         </div>
@@ -151,7 +151,7 @@ export default function Dashboard({ sessions, clients, range, onRangeChange, onE
           </div>
 
           {/* Records */}
-          <div className="bg-surface border border-border rounded-xl px-5 py-4 grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+          <div className="bg-surface border border-border px-5 py-4 grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
             <Record
               label="Best Day"
               value={records.bestDay ? formatCurrency(records.bestDay.earnings) : "—"}
@@ -241,7 +241,7 @@ export default function Dashboard({ sessions, clients, range, onRangeChange, onE
                       <td className="py-2">
                         <span className="flex items-center gap-2 min-w-0">
                           <span
-                            className="w-2 h-2 rounded-full shrink-0"
+                            className="w-2 h-2 shrink-0"
                             style={{ background: row.color }}
                           />
                           <span className="text-white truncate">{row.name}</span>
@@ -274,7 +274,7 @@ export default function Dashboard({ sessions, clients, range, onRangeChange, onE
                 <button
                   key={m}
                   onClick={() => setMetric(m)}
-                  className={`px-3 py-1 rounded-lg border text-xs transition-colors ${
+                  className={`px-3 py-1 border text-xs transition-colors ${
                     metric === m
                       ? "border-accent text-accent bg-accent/10"
                       : "border-border text-muted hover:text-white hover:border-[#444]"

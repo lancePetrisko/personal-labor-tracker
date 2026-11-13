@@ -1,3 +1,4 @@
+import { invoke } from "@tauri-apps/api/core";
 import { useEffect, useRef, useState } from "react";
 import type { Settings } from "../lib/settings";
 import type { VersionInfo } from "../lib/version";
@@ -81,7 +82,7 @@ export default function SettingsPanel({
         <p className="text-xs text-muted mt-1">Stored in labor.db, so they travel with your data.</p>
       </div>
 
-      <section className="bg-surface border border-border rounded-xl p-5 flex flex-col gap-4">
+      <section className="bg-surface border border-border p-5 flex flex-col gap-4">
         <span className="text-xs text-muted uppercase tracking-wider font-medium">History</span>
 
         <div className="flex flex-col gap-2">
@@ -100,7 +101,7 @@ export default function SettingsPanel({
               onKeyDown={(e) => {
                 if (e.key === "Enter") (e.target as HTMLInputElement).blur();
               }}
-              className="w-24 bg-surface-2 border border-border rounded-lg px-3 py-2 text-sm text-white font-mono text-center focus:outline-none focus:border-accent"
+              className="w-24 bg-surface-2 border border-border px-3 py-2 text-sm text-white font-mono text-center focus:outline-none focus:border-accent"
             />
             <div className="flex gap-1.5">
               {PRESETS.map((n) => (
@@ -108,7 +109,7 @@ export default function SettingsPanel({
                   key={n}
                   type="button"
                   onClick={() => commitHistoryLength(String(n))}
-                  className={`px-3 py-1.5 rounded-lg border text-xs transition-colors ${
+                  className={`px-3 py-1.5 border text-xs transition-colors ${
                     settings.historyLength === n
                       ? "border-accent text-accent bg-accent/10"
                       : "border-border text-muted hover:text-white hover:border-[#444]"
@@ -125,7 +126,7 @@ export default function SettingsPanel({
         </div>
       </section>
 
-      <section className="bg-surface border border-border rounded-xl p-5 flex flex-col gap-4">
+      <section className="bg-surface border border-border p-5 flex flex-col gap-4">
         <span className="text-xs text-muted uppercase tracking-wider font-medium">Reports</span>
 
         <div className="flex flex-col gap-2">
@@ -143,12 +144,12 @@ export default function SettingsPanel({
             onKeyDown={(e) => {
               if (e.key === "Enter") e.currentTarget.blur();
             }}
-            className="bg-surface-2 border border-border rounded-lg px-3 py-2 text-sm text-white placeholder:text-[#444] focus:outline-none focus:border-accent"
+            className="bg-surface-2 border border-border px-3 py-2 text-sm text-white placeholder:text-[#444] focus:outline-none focus:border-accent"
           />
         </div>
       </section>
 
-      <section className="bg-surface border border-border rounded-xl p-5 flex flex-col gap-4">
+      <section className="bg-surface border border-border p-5 flex flex-col gap-4">
         <span className="text-xs text-muted uppercase tracking-wider font-medium">About</span>
 
         <div className="flex flex-col gap-2.5">
@@ -168,7 +169,7 @@ export default function SettingsPanel({
         </div>
       </section>
 
-      <section className="bg-surface border border-danger/25 rounded-xl p-5 flex flex-col gap-4">
+      <section className="bg-surface border border-danger/25 p-5 flex flex-col gap-4">
         <span className="text-xs text-danger/80 uppercase tracking-wider font-medium">Danger Zone</span>
 
         <div className="flex flex-col gap-2">
@@ -183,7 +184,7 @@ export default function SettingsPanel({
               type="button"
               onClick={handleClear}
               disabled={clearing || sessionCount === 0}
-              className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors disabled:opacity-40 ${
+              className={`px-4 py-2 text-sm font-medium transition-colors disabled:opacity-40 ${
                 armed
                   ? "bg-danger text-white hover:bg-danger/90"
                   : "bg-danger/10 border border-danger/30 text-danger hover:bg-danger/20"
@@ -200,7 +201,7 @@ export default function SettingsPanel({
               <button
                 type="button"
                 onClick={() => setArmed(false)}
-                className="px-3 py-2 rounded-lg border border-border text-xs text-muted hover:text-white hover:border-[#444] transition-colors"
+                className="px-3 py-2 border border-border text-xs text-muted hover:text-white hover:border-[#444] transition-colors"
               >
                 Cancel
               </button>
@@ -224,6 +225,20 @@ export default function SettingsPanel({
           )}
         </div>
       </section>
+
+      <footer className="pt-6 border-t border-border text-xs text-muted">
+        Developed and maintained by{" "}
+        <a
+          href="https://lancepetrisko.com"
+          onClick={(e) => {
+            e.preventDefault();
+            invoke("open_author_site").catch(() => {});
+          }}
+          className="text-white underline underline-offset-2 decoration-[#444] hover:decoration-white transition-colors"
+        >
+          Lance Petrisko
+        </a>
+      </footer>
     </div>
   );
 }

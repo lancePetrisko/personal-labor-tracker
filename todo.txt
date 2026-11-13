@@ -1,1 +1,3 @@
-make it so when u click on a clients name up top it changes to that client
+Get rid of these poop vibe coded rounded corners and conventions. Make them sharp, make the design feel modern
+make clock in button the same color as the clients color
+add an option to pause instead of just clock out

@@ -1,14 +1,31 @@
 import Database from "@tauri-apps/plugin-sql";
 import type { Client, Session, ActiveSession } from "./types";
 
-let _db: Database | null = null;
+// Cache the promise, not the handle: callers run in parallel at startup and
+// must share one load + schema init, or concurrent ALTER TABLEs collide.
+let _db: Promise<Database> | null = null;
 
-async function getDb(): Promise<Database> {
+function getDb(): Promise<Database> {
   if (!_db) {
-    _db = await Database.load("sqlite:labor.db");
-    await initSchema(_db);
+    _db = (async () => {
+      const db = await Database.load("sqlite:labor.db");
+      await initSchema(db);
+      return db;
+    })();
+    _db.catch(() => {
+      _db = null;
+    });
   }
   return _db;
+}
+
+async function addColumnIfMissing(db: Database, have: Set<string>, name: string, ddl: string) {
+  if (have.has(name)) return;
+  try {
+    await db.execute(`ALTER TABLE sessions ADD COLUMN ${name} ${ddl}`);
+  } catch (e) {
+    if (!/duplicate column/i.test(String(e))) throw e;
+  }
 }
 
 async function initSchema(db: Database) {
@@ -30,6 +47,10 @@ async function initSchema(db: Database) {
       duration_seconds INTEGER
     )
   `);
+  const cols = await db.select<{ name: string }[]>("PRAGMA table_info(sessions)");
+  const have = new Set(cols.map((c) => c.name));
+  await addColumnIfMissing(db, have, "paused_at", "TEXT");
+  await addColumnIfMissing(db, have, "paused_seconds", "INTEGER NOT NULL DEFAULT 0");
   await db.execute(`
     CREATE TABLE IF NOT EXISTS settings (
       key TEXT PRIMARY KEY,
@@ -136,7 +157,7 @@ export async function loadSessionsForClient(
 export async function getActiveSession(): Promise<ActiveSession | null> {
   const db = await getDb();
   const rows = await db.select<ActiveSession[]>(
-    "SELECT id, client_id, started_at, COALESCE(notes, '') as notes FROM sessions WHERE ended_at IS NULL LIMIT 1"
+    "SELECT id, client_id, started_at, COALESCE(notes, '') as notes, paused_at, COALESCE(paused_seconds, 0) as paused_seconds FROM sessions WHERE ended_at IS NULL LIMIT 1"
   );
   return rows[0] ?? null;
 }
@@ -148,21 +169,55 @@ export async function clockIn(client_id: number | null, notes: string): Promise<
     "INSERT INTO sessions (client_id, started_at, notes) VALUES ($1, $2, $3)",
     [client_id, started_at, notes || null]
   );
-  return { id: result.lastInsertId ?? 0, client_id, started_at, notes };
+  return { id: result.lastInsertId ?? 0, client_id, started_at, notes, paused_at: null, paused_seconds: 0 };
+}
+
+export async function pauseSession(sessionId: number): Promise<string> {
+  const db = await getDb();
+  const paused_at = new Date().toISOString();
+  await db.execute(
+    "UPDATE sessions SET paused_at = $1 WHERE id = $2 AND paused_at IS NULL",
+    [paused_at, sessionId]
+  );
+  return paused_at;
+}
+
+/** Folds the current pause into `paused_seconds`. Returns the new total. */
+export async function resumeSession(sessionId: number): Promise<number> {
+  const db = await getDb();
+  const rows = await db.select<{ paused_at: string | null; paused_seconds: number | null }[]>(
+    "SELECT paused_at, paused_seconds FROM sessions WHERE id = $1",
+    [sessionId]
+  );
+  const row = rows[0];
+  let total = row?.paused_seconds ?? 0;
+  if (row?.paused_at) {
+    total += Math.round((Date.now() - new Date(row.paused_at).getTime()) / 1000);
+  }
+  await db.execute(
+    "UPDATE sessions SET paused_at = NULL, paused_seconds = $1 WHERE id = $2",
+    [total, sessionId]
+  );
+  return total;
 }
 
 export async function clockOut(sessionId: number, notes: string): Promise<void> {
   const db = await getDb();
-  const ended_at = new Date().toISOString();
-  const row = await db.select<{ started_at: string }[]>(
-    "SELECT started_at FROM sessions WHERE id = $1",
+  const now = Date.now();
+  const ended_at = new Date(now).toISOString();
+  const rows = await db.select<{ started_at: string; paused_at: string | null; paused_seconds: number | null }[]>(
+    "SELECT started_at, paused_at, paused_seconds FROM sessions WHERE id = $1",
     [sessionId]
   );
-  const duration_seconds = row[0]
-    ? Math.round((Date.now() - new Date(row[0].started_at).getTime()) / 1000)
-    : 0;
+  const row = rows[0];
+  let duration_seconds = 0;
+  if (row) {
+    let paused = row.paused_seconds ?? 0;
+    if (row.paused_at) paused += Math.round((now - new Date(row.paused_at).getTime()) / 1000);
+    duration_seconds = Math.max(0, Math.round((now - new Date(row.started_at).getTime()) / 1000) - paused);
+  }
   await db.execute(
-    "UPDATE sessions SET ended_at = $1, duration_seconds = $2, notes = $3 WHERE id = $4",
+    "UPDATE sessions SET ended_at = $1, duration_seconds = $2, notes = $3, paused_at = NULL WHERE id = $4",
     [ended_at, duration_seconds, notes || null, sessionId]
   );
 }

@@ -33,7 +33,7 @@ export default function AddClientModal({ onAdd, onClose }: Props) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
       <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative bg-surface border border-border rounded-2xl p-6 w-full max-w-sm shadow-2xl">
+      <div className="relative bg-surface border border-border p-6 w-full max-w-sm">
         <h2 className="text-base font-semibold text-white mb-5">Add Client</h2>
 
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
@@ -45,7 +45,7 @@ export default function AddClientModal({ onAdd, onClose }: Props) {
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder="Client name"
-              className="bg-surface-2 border border-border rounded-lg px-3 py-2 text-sm text-white placeholder:text-[#444] focus:outline-none focus:border-accent"
+              className="bg-surface-2 border border-border px-3 py-2 text-sm text-white placeholder:text-[#444] focus:outline-none focus:border-accent"
             />
           </div>
 
@@ -60,7 +60,7 @@ export default function AddClientModal({ onAdd, onClose }: Props) {
                 placeholder="0.00"
                 min="0"
                 step="0.01"
-                className="w-full bg-surface-2 border border-border rounded-lg pl-7 pr-3 py-2 text-sm text-white placeholder:text-[#444] focus:outline-none focus:border-accent"
+                className="w-full bg-surface-2 border border-border pl-7 pr-3 py-2 text-sm text-white placeholder:text-[#444] focus:outline-none focus:border-accent"
               />
             </div>
           </div>
@@ -73,7 +73,7 @@ export default function AddClientModal({ onAdd, onClose }: Props) {
                   key={c}
                   type="button"
                   onClick={() => setColor(c)}
-                  className="w-7 h-7 rounded-full transition-transform hover:scale-110"
+                  className="w-7 h-7"
                   style={{
                     background: c,
                     outline: color === c ? `2px solid ${c}` : "2px solid transparent",
@@ -90,14 +90,14 @@ export default function AddClientModal({ onAdd, onClose }: Props) {
             <button
               type="button"
               onClick={onClose}
-              className="flex-1 py-2 rounded-lg border border-border text-sm text-muted hover:text-white hover:border-[#444] transition-colors"
+              className="flex-1 py-2 border border-border text-sm text-muted hover:text-white hover:border-[#444] transition-colors"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={loading}
-              className="flex-1 py-2 rounded-lg bg-accent text-white text-sm font-medium hover:bg-accent-hover transition-colors disabled:opacity-50"
+              className="flex-1 py-2 bg-accent text-white text-sm font-medium hover:bg-accent-hover transition-colors disabled:opacity-50"
             >
               {loading ? "Adding..." : "Add Client"}
             </button>

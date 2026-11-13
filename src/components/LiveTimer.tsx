@@ -1,26 +1,33 @@
 import { useEffect, useState } from "react";
-import { formatDurationTimer, secondsSince } from "../lib/utils";
+import type { ActiveSession } from "../lib/types";
+import { activeElapsed, formatDurationTimer } from "../lib/utils";
 
 interface Props {
-  startedAt: string;
+  session: ActiveSession;
   onTick?: (seconds: number) => void;
 }
 
-export default function LiveTimer({ startedAt, onTick }: Props) {
-  const [elapsed, setElapsed] = useState(() => secondsSince(startedAt));
+export default function LiveTimer({ session, onTick }: Props) {
+  const [elapsed, setElapsed] = useState(() => activeElapsed(session));
+  const paused = !!session.paused_at;
 
   useEffect(() => {
-    setElapsed(secondsSince(startedAt));
+    setElapsed(activeElapsed(session));
+    if (paused) return;
     const interval = setInterval(() => {
-      const s = secondsSince(startedAt);
+      const s = activeElapsed(session);
       setElapsed(s);
       onTick?.(s);
     }, 1000);
     return () => clearInterval(interval);
-  }, [startedAt, onTick]);
+  }, [session, paused, onTick]);
 
   return (
-    <span className="font-mono text-5xl font-medium tracking-widest text-white tabular-nums">
+    <span
+      className={`font-mono text-5xl font-medium tracking-widest tabular-nums transition-colors ${
+        paused ? "text-muted" : "text-white"
+      }`}
+    >
       {formatDurationTimer(elapsed)}
     </span>
   );

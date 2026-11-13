@@ -103,7 +103,7 @@ export default function SessionHistory({ sessions, onDelete, onUpdateNotes, onEd
             <div className="min-w-0">
               {session.client_name ? (
                 <span
-                  className="text-xs px-2 py-0.5 rounded-full font-medium inline-block max-w-full truncate"
+                  className="text-xs px-2 py-0.5 font-medium inline-block max-w-full truncate"
                   style={{
                     background: `${session.client_color ?? "#6366f1"}22`,
                     color: session.client_color ?? "#6366f1",
@@ -125,7 +125,7 @@ export default function SessionHistory({ sessions, onDelete, onUpdateNotes, onEd
                 onChange={(e) => setDraftNotes(e.target.value)}
                 onBlur={() => commitNotes(session.id)}
                 onKeyDown={(e) => handleNotesKeyDown(e, session.id)}
-                className="w-full bg-surface-2 border border-accent rounded px-2 py-0.5 text-sm text-white focus:outline-none"
+                className="w-full bg-surface-2 border border-accent px-2 py-0.5 text-sm text-white focus:outline-none"
               />
             ) : (
               <button
@@ -142,7 +142,7 @@ export default function SessionHistory({ sessions, onDelete, onUpdateNotes, onEd
               <button
                 onClick={() => onEdit(session)}
                 title="Edit session"
-                className="w-7 h-7 flex items-center justify-center rounded-lg text-muted hover:text-white hover:bg-surface-2 transition-colors text-xs"
+                className="w-7 h-7 flex items-center justify-center text-muted hover:text-white hover:bg-surface-2 transition-colors text-xs"
               >
                 &#9998;
               </button>
@@ -152,7 +152,7 @@ export default function SessionHistory({ sessions, onDelete, onUpdateNotes, onEd
                   onMouseLeave={() => setConfirmDelete(null)}
                   disabled={deleting === session.id}
                   title="Click again to delete"
-                  className="h-7 px-2 flex items-center justify-center rounded-lg bg-danger/15 border border-danger/40 text-danger text-[10px] font-medium uppercase tracking-wider transition-colors hover:bg-danger/25 disabled:opacity-50"
+                  className="h-7 px-2 flex items-center justify-center bg-danger/15 border border-danger/40 text-danger text-[10px] font-medium uppercase tracking-wider transition-colors hover:bg-danger/25 disabled:opacity-50"
                 >
                   {deleting === session.id ? "..." : "Sure?"}
                 </button>
@@ -160,7 +160,7 @@ export default function SessionHistory({ sessions, onDelete, onUpdateNotes, onEd
                 <button
                   onClick={() => setConfirmDelete(session.id)}
                   title="Delete session"
-                  className="w-7 h-7 flex items-center justify-center rounded-lg text-muted hover:text-danger hover:bg-danger/10 transition-colors text-xs"
+                  className="w-7 h-7 flex items-center justify-center text-muted hover:text-danger hover:bg-danger/10 transition-colors text-xs"
                 >
                   &#128465;
                 </button>

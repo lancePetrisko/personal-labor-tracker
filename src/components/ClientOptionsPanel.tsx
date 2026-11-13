@@ -66,7 +66,7 @@ export default function ClientOptionsPanel({
   }
 
   return (
-    <div className={`w-full max-w-md mx-auto bg-surface border border-border rounded-xl flex flex-col transition-all ${
+    <div className={`w-full max-w-md mx-auto bg-surface border border-border flex flex-col transition-all ${
         open ? "p-5 gap-4" : "px-5 py-3"
       }`}>
       <button
@@ -93,7 +93,7 @@ export default function ClientOptionsPanel({
         {!open && client && (
           <span className="flex items-center gap-2 ml-auto min-w-0">
             <span
-              className="text-xs px-2 py-0.5 rounded-full font-medium truncate"
+              className="text-xs px-2 py-0.5 font-medium truncate"
               style={{
                 background: `${client.color}22`,
                 color: client.color,
@@ -108,7 +108,7 @@ export default function ClientOptionsPanel({
           </span>
         )}
         {!open && dirty && (
-          <span className="w-1.5 h-1.5 rounded-full bg-accent shrink-0" title="Unsaved changes" />
+          <span className="w-1.5 h-1.5 bg-accent shrink-0" title="Unsaved changes" />
         )}
         {!open && !client && (
           <span className="text-xs text-muted ml-auto">No client selected</span>
@@ -147,7 +147,7 @@ export default function ClientOptionsPanel({
                 placeholder="0.00"
                 min="0"
                 step="0.01"
-                className={`w-full bg-surface-2 border rounded-lg pl-7 pr-14 py-2 text-sm text-white font-mono placeholder:text-[#444] focus:outline-none ${
+                className={`w-full bg-surface-2 border pl-7 pr-14 py-2 text-sm text-white font-mono placeholder:text-[#444] focus:outline-none ${
                   rateInvalid ? "border-danger" : "border-border focus:border-accent"
                 }`}
               />
@@ -169,7 +169,7 @@ export default function ClientOptionsPanel({
                   type="button"
                   onClick={() => setColor(c)}
                   title={c}
-                  className="w-7 h-7 rounded-full transition-transform hover:scale-110"
+                  className="w-7 h-7"
                   style={{
                     background: c,
                     outline: color === c ? `2px solid ${c}` : "2px solid transparent",
@@ -184,7 +184,7 @@ export default function ClientOptionsPanel({
           <div className="flex items-center gap-3 border-t border-border pt-3">
             <span className="text-xs text-muted uppercase tracking-wider">Preview</span>
             <span
-              className="text-xs px-2 py-0.5 rounded-full font-medium"
+              className="text-xs px-2 py-0.5 font-medium"
               style={{
                 background: `${color}22`,
                 color,
@@ -203,7 +203,7 @@ export default function ClientOptionsPanel({
               type="button"
               onClick={handleRevert}
               disabled={!dirty}
-              className="flex-1 py-2 rounded-lg border border-border text-sm text-muted hover:text-white hover:border-[#444] transition-colors disabled:opacity-40 disabled:hover:text-muted disabled:hover:border-border"
+              className="flex-1 py-2 border border-border text-sm text-muted hover:text-white hover:border-[#444] transition-colors disabled:opacity-40 disabled:hover:text-muted disabled:hover:border-border"
             >
               Revert
             </button>
@@ -211,7 +211,7 @@ export default function ClientOptionsPanel({
               type="button"
               onClick={handleSave}
               disabled={!dirty || saving}
-              className="flex-1 py-2 rounded-lg bg-accent text-white text-sm font-medium hover:bg-accent-hover transition-colors disabled:opacity-40"
+              className="flex-1 py-2 bg-accent text-white text-sm font-medium hover:bg-accent-hover transition-colors disabled:opacity-40"
             >
               {saving ? "Saving..." : "Save"}
             </button>

@@ -33,6 +33,12 @@ export function secondsSince(iso: string): number {
   return Math.floor((Date.now() - new Date(iso).getTime()) / 1000);
 }
 
+/** Worked seconds for a running session, excluding time spent paused. */
+export function activeElapsed(s: { started_at: string; paused_at: string | null; paused_seconds: number }): number {
+  const end = s.paused_at ? new Date(s.paused_at).getTime() : Date.now();
+  return Math.max(0, Math.floor((end - new Date(s.started_at).getTime()) / 1000) - s.paused_seconds);
+}
+
 export function totalSeconds(sessions: { duration_seconds: number | null }[]): number {
   return sessions.reduce((sum, s) => sum + (s.duration_seconds ?? 0), 0);
 }
@@ -106,4 +112,16 @@ export function splitDuration(seconds: number): { h: number; m: number; s: numbe
     m: Math.floor((seconds % 3600) / 60),
     s: seconds % 60,
   };
+}
+
+/** Black or white, whichever reads better on the given hex background. */
+export function readableTextOn(hex: string): string {
+  const m = hex.replace("#", "").match(/^([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})$/i);
+  if (!m) return "#ffffff";
+  const lin = (v: string) => {
+    const c = parseInt(v, 16) / 255;
+    return c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4;
+  };
+  const L = 0.2126 * lin(m[1]) + 0.7152 * lin(m[2]) + 0.0722 * lin(m[3]);
+  return (L + 0.05) / 0.05 > 1.05 / (L + 0.05) ? "#0a0a0a" : "#ffffff";
 }

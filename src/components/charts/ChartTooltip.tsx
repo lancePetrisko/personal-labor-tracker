@@ -27,7 +27,7 @@ export default function ChartTooltip({ tooltip }: { tooltip: TooltipState | null
   if (!tooltip) return null;
   return (
     <div
-      className="pointer-events-none absolute z-30 bg-[#1e1e1e] border border-border rounded-lg px-3 py-2 shadow-xl text-xs whitespace-nowrap"
+      className="pointer-events-none absolute z-30 bg-[#1e1e1e] border border-border px-3 py-2 text-xs whitespace-nowrap"
       style={{
         left: tooltip.x,
         top: tooltip.y,
@@ -43,7 +43,7 @@ export default function ChartTooltip({ tooltip }: { tooltip: TooltipState | null
 export function LegendRow({ color, label, value }: { color: string; label: string; value?: string }) {
   return (
     <div className="flex items-center gap-2">
-      <span className="w-2 h-2 rounded-full shrink-0" style={{ background: color }} />
+      <span className="w-2 h-2 shrink-0" style={{ background: color }} />
       <span className="text-muted">{label}</span>
       {value && <span className="text-white font-mono ml-auto pl-3">{value}</span>}
     </div>

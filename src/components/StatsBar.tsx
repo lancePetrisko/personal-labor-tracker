@@ -75,7 +75,7 @@ export default function StatsBar({
           <>
             <span className="text-xs text-muted">Showing</span>
             <span
-              className="text-xs px-2 py-0.5 rounded-full font-medium"
+              className="text-xs px-2 py-0.5 font-medium"
               style={{
                 background: `${filterClient.color}22`,
                 color: filterClient.color,
@@ -103,7 +103,7 @@ export default function StatsBar({
         {stats.map(({ label, secs, earnings }) => (
           <div
             key={label}
-            className="bg-surface border border-border rounded-xl px-4 py-3 flex flex-col gap-1"
+            className="bg-surface border border-border px-4 py-3 flex flex-col gap-1"
             style={filterClient ? { borderColor: `${filterClient.color}33` } : undefined}
           >
             <span className="text-xs text-muted uppercase tracking-wider">{label}</span>

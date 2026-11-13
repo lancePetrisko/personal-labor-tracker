@@ -36,7 +36,7 @@ export default function Heatmap({ matrix }: { matrix: number[][] }) {
             {row.map((value, hour) => (
               <div
                 key={hour}
-                className="flex-1 h-4 rounded-[3px] transition-transform hover:scale-125"
+                className="flex-1 h-4 transition-opacity hover:opacity-70"
                 style={{
                   background:
                     value > 0 ? `${HUE}${Math.round(stepFor(value, max) * 255).toString(16).padStart(2, "0")}` : "#1a1a1a",
@@ -76,7 +76,7 @@ export default function Heatmap({ matrix }: { matrix: number[][] }) {
         {[0, ...STEPS].map((step, i) => (
           <span
             key={i}
-            className="w-4 h-3 rounded-[3px]"
+            className="w-4 h-3"
             style={{
               background:
                 step > 0 ? `${HUE}${Math.round(step * 255).toString(16).padStart(2, "0")}` : "#1a1a1a",

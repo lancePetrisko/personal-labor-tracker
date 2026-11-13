@@ -67,7 +67,7 @@ const PRESETS: { label: string; range: () => { from: Date; to: Date } }[] = [
 
 const LABEL = "text-xs text-muted uppercase tracking-wider";
 const INPUT =
-  "bg-surface-2 border border-border rounded-lg px-3 py-2 text-sm text-white placeholder:text-[#444] focus:outline-none focus:border-accent";
+  "bg-surface-2 border border-border px-3 py-2 text-sm text-white placeholder:text-[#444] focus:outline-none focus:border-accent";
 
 export default function ExportReportModal({ clients, initialClientId, onPreview, onExport, onClose }: Props) {
   const initialRange = monthRange(0);
@@ -152,7 +152,7 @@ export default function ExportReportModal({ clients, initialClientId, onPreview,
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
       <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative bg-surface border border-border rounded-2xl p-6 w-full max-w-sm shadow-2xl">
+      <div className="relative bg-surface border border-border p-6 w-full max-w-sm">
         <h2 className="text-base font-semibold text-white mb-1">Export Work Report</h2>
         <p className="text-xs text-muted mb-5">
           One client per PDF — no other client's work appears in the file.
@@ -172,7 +172,7 @@ export default function ExportReportModal({ clients, initialClientId, onPreview,
                   key={preset.label}
                   type="button"
                   onClick={() => applyPreset(preset.range())}
-                  className="px-2.5 py-1 rounded-lg border border-border text-xs text-muted hover:text-white hover:border-[#444] transition-colors"
+                  className="px-2.5 py-1 border border-border text-xs text-muted hover:text-white hover:border-[#444] transition-colors"
                 >
                   {preset.label}
                 </button>
@@ -226,7 +226,7 @@ export default function ExportReportModal({ clients, initialClientId, onPreview,
             )}
           </div>
 
-          <div className="bg-surface-2 border border-border rounded-lg px-3 py-2 text-xs text-muted">
+          <div className="bg-surface-2 border border-border px-3 py-2 text-xs text-muted">
             {previewLabel}
           </div>
 
@@ -236,14 +236,14 @@ export default function ExportReportModal({ clients, initialClientId, onPreview,
             <button
               type="button"
               onClick={onClose}
-              className="flex-1 py-2 rounded-lg border border-border text-sm text-muted hover:text-white hover:border-[#444] transition-colors"
+              className="flex-1 py-2 border border-border text-sm text-muted hover:text-white hover:border-[#444] transition-colors"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={!canExport}
-              className="flex-1 py-2 rounded-lg bg-accent text-white text-sm font-medium hover:bg-accent-hover transition-colors disabled:opacity-50"
+              className="flex-1 py-2 bg-accent text-white text-sm font-medium hover:bg-accent-hover transition-colors disabled:opacity-50"
             >
               {loading ? "Generating..." : "Export PDF"}
             </button>

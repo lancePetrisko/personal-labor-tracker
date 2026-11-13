@@ -12,6 +12,8 @@ import {
   deleteClient,
   clockIn,
   clockOut,
+  pauseSession,
+  resumeSession,
   deleteSession,
   updateSessionNotes,
   updateSession,
@@ -22,8 +24,9 @@ import {
   countSessions,
   loadSessionsForClient,
 } from "./lib/db";
-import { formatDurationShort, secondsSince } from "./lib/utils";
+import { formatDurationShort, activeElapsed } from "./lib/utils";
 import ClockPanel from "./components/ClockPanel";
+import ErrorScreen from "./components/ErrorScreen";
 import StatsBar from "./components/StatsBar";
 import SessionHistory from "./components/SessionHistory";
 import AddClientModal from "./components/AddClientModal";
@@ -72,7 +75,7 @@ export default function App() {
     setSessionTotal(n);
     setActiveSession(a);
     setSettings(parseSettings(cfg));
-    if (a) setActiveDelta(secondsSince(a.started_at));
+    if (a) setActiveDelta(activeElapsed(a));
   }, []);
 
   useEffect(() => {
@@ -93,13 +96,17 @@ export default function App() {
       getCurrentWindow().setTitle("Labor Tracker").catch(() => {});
       return;
     }
-    const interval = setInterval(() => {
-      const secs = secondsSince(activeSession.started_at);
+    const tick = () => {
+      const secs = activeElapsed(activeSession);
       setActiveDelta(secs);
+      const label = formatDurationShort(secs) + (activeSession.paused_at ? " (paused)" : "");
       getCurrentWindow()
-        .setTitle(`Labor Tracker — ${formatDurationShort(secs)}`)
+        .setTitle(`Labor Tracker — ${label}`)
         .catch(() => {});
-    }, 1000);
+    };
+    tick();
+    if (activeSession.paused_at) return;
+    const interval = setInterval(tick, 1000);
     return () => clearInterval(interval);
   }, [activeSession]);
 
@@ -127,6 +134,18 @@ export default function App() {
     const session = await clockIn(clientId, notes);
     setActiveSession(session);
     setActiveDelta(0);
+  }
+
+  async function handlePause() {
+    if (!activeSession || activeSession.paused_at) return;
+    const paused_at = await pauseSession(activeSession.id);
+    setActiveSession({ ...activeSession, paused_at });
+  }
+
+  async function handleResume() {
+    if (!activeSession || !activeSession.paused_at) return;
+    const paused_seconds = await resumeSession(activeSession.id);
+    setActiveSession({ ...activeSession, paused_at: null, paused_seconds });
   }
 
   async function handleClockOut(notes: string) {
@@ -258,10 +277,7 @@ export default function App() {
 
   if (error) {
     return (
-      <div className="h-screen flex flex-col items-center justify-center gap-3">
-        <span className="text-danger text-sm">Failed to initialize database</span>
-        <span className="text-muted text-xs font-mono">{error}</span>
-      </div>
+      <ErrorScreen title="Failed to initialize database" error={error} version={version.app} />
     );
   }
 
@@ -276,7 +292,7 @@ export default function App() {
             <button
               onClick={() => setView("settings")}
               title="View version details in Settings"
-              className="font-mono text-[10px] text-muted px-1.5 py-0.5 rounded-md border border-border hover:text-white hover:border-[#444] transition-colors"
+              className="font-mono text-[10px] text-muted px-1.5 py-0.5 border border-border hover:text-white hover:border-[#444] transition-colors"
             >
               v{version.app}
             </button>
@@ -286,7 +302,7 @@ export default function App() {
               <button
                 key={id}
                 onClick={() => setView(id)}
-                className={`px-3 py-1.5 rounded-lg text-xs transition-colors ${
+                className={`px-3 py-1.5 text-xs transition-colors ${
                   view === id
                     ? "bg-surface-2 text-white"
                     : "text-muted hover:text-white hover:bg-surface"
@@ -308,7 +324,7 @@ export default function App() {
                       title={isSelected ? `${c.name} selected` : `Select ${c.name}`}
                       onClick={() => !activeSession && setSelectedClientId(isSelected ? null : c.id)}
                       disabled={!!activeSession}
-                      className="text-xs px-2 py-0.5 rounded-full font-medium transition-all"
+                      className="text-xs px-2 py-0.5 font-medium transition-all"
                       style={{
                         background: isSelected ? `${c.color}44` : `${c.color}22`,
                         color: c.color,
@@ -322,7 +338,7 @@ export default function App() {
                     <button
                       onClick={(e) => { e.stopPropagation(); setEditingClient(c); }}
                       title={`Edit ${c.name}`}
-                      className="absolute -top-1.5 -right-1.5 w-4 h-4 rounded-full bg-[#1a1a1a] border border-border text-[9px] text-muted opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity hover:text-white hover:border-[#444]"
+                      className="absolute -top-1.5 -right-1.5 w-4 h-4 bg-[#1a1a1a] border border-border text-[9px] text-muted opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity hover:text-white hover:border-[#444]"
                     >
                       ✎
                     </button>
@@ -333,7 +349,7 @@ export default function App() {
           )}
           <button
             onClick={() => setShowAddClient(true)}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-border text-xs text-muted hover:text-white hover:border-[#444] transition-colors"
+            className="flex items-center gap-1.5 px-3 py-1.5 border border-border text-xs text-muted hover:text-white hover:border-[#444] transition-colors"
           >
             <span className="text-base leading-none">+</span> Client
           </button>
@@ -374,6 +390,8 @@ export default function App() {
             onSelectClient={setSelectedClientId}
             onClockIn={handleClockIn}
             onClockOut={handleClockOut}
+            onPause={handlePause}
+            onResume={handleResume}
           />
         </div>
 
@@ -410,16 +428,16 @@ export default function App() {
               <button
                 onClick={() => invoke("show_in_explorer").catch(() => {})}
                 title="Open the folder containing labor.db so you can copy it to another device"
-                className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg border border-border text-xs text-muted hover:text-white hover:border-[#444] transition-colors"
+                className="flex items-center gap-1.5 px-2.5 py-1 border border-border text-xs text-muted hover:text-white hover:border-[#444] transition-colors"
               >
-                <span className="text-sm leading-none">&#128193;</span> Show Data Folder
+                Show Data Folder
               </button>
               <span className="text-xs text-muted">
                 {sessions.length} {sessions.length === 1 ? "session" : "sessions"}
               </span>
             </div>
           </div>
-          <div className="bg-surface border border-border rounded-xl overflow-hidden">
+          <div className="bg-surface border border-border overflow-hidden">
             <SessionHistory
               sessions={sessions}
               onDelete={handleDeleteSession}

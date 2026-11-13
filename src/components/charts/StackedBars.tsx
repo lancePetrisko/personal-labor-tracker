@@ -81,12 +81,10 @@ export default function StackedBars({ buckets, series, metric, formatValue }: Pr
                   }
                   onMouseLeave={hide}
                 >
-                  {contributions.map((c, i) => (
+                  {contributions.map((c) => (
                     <div
                       key={c.key}
-                      className={`w-full transition-opacity group-hover:opacity-90 ${
-                        i === 0 ? "rounded-t-[4px]" : ""
-                      }`}
+                      className="w-full transition-opacity group-hover:opacity-90"
                       style={{
                         height: `${(c.value / max) * 100}%`,
                         background: c.color,

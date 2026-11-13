@@ -124,14 +124,14 @@ export default function ClientSelect({ clients, value, onChange, disabled }: Pro
         onClick={() => (open ? setOpen(false) : openMenu())}
         onKeyDown={handleKeyDown}
         className={`
-          w-full flex items-center gap-2 bg-surface-2 border rounded-lg px-3 py-2
+          w-full flex items-center gap-2 bg-surface-2 border px-3 py-2
           text-sm text-left transition-colors duration-150 disabled:opacity-50
           focus:outline-none
           ${open ? "border-accent" : "border-border hover:border-[#3a3a3a]"}
         `}
       >
         <span
-          className="w-2 h-2 rounded-full shrink-0"
+          className="w-2 h-2 shrink-0"
           style={{ background: selected.color ?? "#3a3a3a" }}
         />
         <span className={`flex-1 truncate ${selected.id === NO_CLIENT ? "text-muted" : "text-white"}`}>
@@ -161,7 +161,7 @@ export default function ClientSelect({ clients, value, onChange, disabled }: Pro
           onKeyDown={handleKeyDown}
           className={`
             absolute z-50 left-0 right-0 max-h-60 overflow-y-auto p-1
-            bg-surface-2 border border-border rounded-lg shadow-xl shadow-black/60
+            bg-surface-2 border border-border
             dropdown-in
             ${dropUp ? "bottom-full mb-1 origin-bottom" : "top-full mt-1 origin-top"}
           `}
@@ -177,12 +177,12 @@ export default function ClientSelect({ clients, value, onChange, disabled }: Pro
                 onMouseDown={(e) => e.preventDefault()}
                 onClick={() => commit(i)}
                 className={`
-                  flex items-center gap-2 px-2 py-2 rounded-md cursor-pointer
+                  flex items-center gap-2 px-2 py-2 cursor-pointer
                   ${highlight === i ? "bg-[#2a2a2a]" : ""}
                 `}
               >
                 <span
-                  className="w-2 h-2 rounded-full shrink-0"
+                  className="w-2 h-2 shrink-0"
                   style={{ background: opt.color ?? "#3a3a3a" }}
                 />
                 <span className={`flex-1 truncate text-sm ${opt.id === NO_CLIENT ? "text-muted" : "text-white"}`}>

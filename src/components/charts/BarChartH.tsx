@@ -32,7 +32,7 @@ export default function BarChartH({ rows, emptyMessage = "No data" }: Props) {
             <span className="text-xs font-mono text-muted shrink-0">{row.display}</span>
           </div>
           <div
-            className="h-2 w-full rounded-sm bg-[#1c1c1c] overflow-hidden"
+            className="h-2 w-full bg-[#1c1c1c] overflow-hidden"
             onMouseMove={(e) =>
               show(
                 e,
@@ -46,7 +46,7 @@ export default function BarChartH({ rows, emptyMessage = "No data" }: Props) {
             onMouseLeave={hide}
           >
             <div
-              className="h-full rounded-sm transition-all duration-300"
+              className="h-full transition-all duration-300"
               style={{
                 width: `${Math.max((row.value / max) * 100, row.value > 0 ? 2 : 0)}%`,
                 background: row.color,
